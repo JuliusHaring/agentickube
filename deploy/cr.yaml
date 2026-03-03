@@ -1,0 +1,15 @@
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: my-agent
+spec:
+  llm:
+    modelName: s
+    baseUrl: s
+    apiKey:
+      raw: s
+  prompts:
+    systemPrompt: test
+  mcpServers:
+    - url: https://knowledge-mcp.global.api.aws
+      type: streamable_http

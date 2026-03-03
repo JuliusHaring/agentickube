@@ -1,0 +1,20 @@
+version: '3'
+
+includes:
+  docker: tasks/docker.yaml
+  k8s: tasks/k8s.yaml
+  dev: tasks/dev.yaml
+  agent: pkg/agent/tasks/agent.yaml
+
+tasks:
+  default:
+   - task: deploy
+
+  deploy:
+    - task: dev:all
+    - task: docker:build-all
+    - task: k8s:create-ns
+    - task: k8s:set-context
+    - task: k8s:apply-crd
+    - task: k8s:init-ns
+    - task: k8s:apply-all

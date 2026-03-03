@@ -1,0 +1,4 @@
+version: '3'
+
+tasks:
+  run: python pkg/agent/src/main.py {{.CLI_ARGS}}

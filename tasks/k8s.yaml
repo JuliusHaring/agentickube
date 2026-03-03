@@ -1,0 +1,18 @@
+version: '3'
+
+tasks:
+  run-orchestrator: watchmedo auto-restart --patterns "*.py" -d pkg/operator  -- kopf run pkg/operator/main.py --namespace=test --verbose
+
+  create-ns: kubectl create namespace test || true
+
+  set-context: kubectl config set-context --current --namespace=test || true
+
+  init-ns: kubectl delete ag --all -n test && kubectl delete deployment --all -n test && kubectl delete pod --all -n test
+
+  apply-crd: kubectl apply -f deploy/crd.yaml
+
+  apply-folder: kubectl apply -f deploy/
+
+  apply-all:
+    - task: apply-crd
+    - task: apply-folder

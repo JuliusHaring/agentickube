@@ -1,0 +1,60 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: agents.ai.juliusharing.com   # matches plural + group
+spec:
+  group: ai.juliusharing.com
+  scope: Namespaced
+  names:
+    plural: agents
+    singular: agent
+    kind: Agent
+    shortNames:
+      - ag
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object                 # <-- root type
+          properties:
+            spec:
+              type: object             # <-- spec must have a type
+              properties:
+                llm:
+                  type: object
+                  properties:
+                    modelName:
+                      type: string
+                    baseUrl:
+                      type: string
+                    apiKey:
+                      type: object
+                      properties:
+                        secretName:
+                          type: string
+                        secretKey:
+                          type: string
+                        raw:
+                          type: string
+                prompts:
+                  type: object
+                  properties:
+                    systemPrompt:
+                      type: string
+                mcpServers:
+                  type: array
+                  description: MCP servers to attach to the agent (toolsets).
+                  items:
+                    type: object
+                    required: [url]
+                    properties:
+                      url:
+                        type: string
+                        description: Server URL (SSE or Streamable HTTP endpoint).
+                      type:
+                        type: string
+                        enum: [sse, streamable_http]
+                        default: streamable_http
+                        description: Transport type (default streamable_http).

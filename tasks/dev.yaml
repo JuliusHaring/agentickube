@@ -1,0 +1,13 @@
+version: '3'
+
+tasks:
+  install: uv pip install -r environments/dev-requirements.txt
+
+  format: ruff format
+  lint: ruff check .
+  lint-fix: ruff check . --fix
+
+  all:
+    - task: install
+    - task: format
+    - task: lint-fix
