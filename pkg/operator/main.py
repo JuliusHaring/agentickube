@@ -15,6 +15,32 @@ except config.ConfigException:
 
 AGENT_CRD_GROUP = "agents.ai.juliusharing.com"
 DEPLOYMENT_NAME_PREFIX = "agent-"
+WORKSPACE_VOLUME_NAME = "workspace"
+DEFAULT_WORKSPACE_PATH = "/workspace"
+
+
+def _workspace_from_spec(spec: dict) -> tuple[str, client.V1Volume]:
+    """Return (mount_path, volume). Uses PVC if spec.workspace.persistentVolumeClaim.claimName set, else emptyDir."""
+    workspace = spec.get("workspace") or {}
+    path = (
+        workspace.get("path") or DEFAULT_WORKSPACE_PATH
+    ).strip() or DEFAULT_WORKSPACE_PATH
+    pvc = workspace.get("persistentVolumeClaim") or {}
+    claim_name = (pvc.get("claimName") or "").strip()
+
+    if claim_name:
+        volume = client.V1Volume(
+            name=WORKSPACE_VOLUME_NAME,
+            persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                claim_name=claim_name
+            ),
+        )
+    else:
+        volume = client.V1Volume(
+            name=WORKSPACE_VOLUME_NAME,
+            empty_dir=client.V1EmptyDirVolumeSource(),
+        )
+    return path, volume
 
 
 def _env_from_spec(spec: dict) -> list[client.V1EnvVar]:
@@ -51,6 +77,9 @@ def _env_from_spec(spec: dict) -> list[client.V1EnvVar]:
         env_vars.append(client.V1EnvVar(name=f"MCP_SERVER_{i}_URL", value=url))
         env_vars.append(client.V1EnvVar(name=f"MCP_SERVER_{i}_TYPE", value=transport))
 
+    workspace_path, _ = _workspace_from_spec(spec)
+    env_vars.append(client.V1EnvVar(name="WORKSPACE_DIR", value=workspace_path))
+
     return env_vars
 
 
@@ -63,6 +92,7 @@ def _make_deployment(
 ) -> client.V1Deployment:
     deployment_name = _deployment_name(name)
     env_vars = _env_from_spec(spec)
+    workspace_path, workspace_volume = _workspace_from_spec(spec)
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
@@ -76,6 +106,7 @@ def _make_deployment(
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(labels={"agent": name}),
                 spec=client.V1PodSpec(
+                    volumes=[workspace_volume],
                     containers=[
                         client.V1Container(
                             name="agent",
@@ -83,8 +114,14 @@ def _make_deployment(
                             env=env_vars,
                             image_pull_policy="Never",
                             ports=[client.V1ContainerPort(container_port=80)],
+                            volume_mounts=[
+                                client.V1VolumeMount(
+                                    name=WORKSPACE_VOLUME_NAME,
+                                    mount_path=workspace_path,
+                                )
+                            ],
                         )
-                    ]
+                    ],
                 ),
             ),
         ),
@@ -111,9 +148,14 @@ def update_agent(
 ) -> None:
     deployment_name = _deployment_name(name)
     env_vars = _env_from_spec(spec)
+    workspace_path, workspace_volume = _workspace_from_spec(spec)
     apps = client.AppsV1Api()
     deployment = apps.read_namespaced_deployment(deployment_name, namespace)
+    deployment.spec.template.spec.volumes = [workspace_volume]
     deployment.spec.template.spec.containers[0].env = env_vars
+    deployment.spec.template.spec.containers[0].volume_mounts = [
+        client.V1VolumeMount(name=WORKSPACE_VOLUME_NAME, mount_path=workspace_path)
+    ]
     apps.patch_namespaced_deployment(deployment_name, namespace, deployment)
     logger.info("Deployment updated", deployment=deployment_name)
 

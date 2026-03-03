@@ -13,3 +13,7 @@ spec:
   mcpServers:
     - url: https://knowledge-mcp.global.api.aws
       type: streamable_http
+  # workspace:
+  #   path: /workspace
+  #   persistentVolumeClaim:
+  #     claimName: agent-workspace-pvc

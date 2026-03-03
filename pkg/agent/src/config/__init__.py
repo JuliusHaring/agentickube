@@ -31,6 +31,7 @@ class LLMConfig(BaseSettings):
     api_key: str = ""
     system_prompt: Optional[str] = None
     mcp_servers: list[MCPServerConfig] = []
+    workspace_dir: str = "/workspace"  # Writable folder; operator sets WORKSPACE_DIR when spec.workspace is used
 
     @field_validator("mcp_servers", mode="before")
     @classmethod

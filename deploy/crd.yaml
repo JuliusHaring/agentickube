@@ -58,3 +58,18 @@ spec:
                         enum: [sse, streamable_http]
                         default: streamable_http
                         description: Transport type (default streamable_http).
+                workspace:
+                  type: object
+                  description: Writable folder for the agent; optional PVC mount.
+                  properties:
+                    path:
+                      type: string
+                      default: /workspace
+                      description: Mount path in the container (must be absolute).
+                    persistentVolumeClaim:
+                      type: object
+                      description: If set, mount this PVC at path; otherwise use ephemeral emptyDir.
+                      properties:
+                        claimName:
+                          type: string
+                          description: Name of the PersistentVolumeClaim in the same namespace.
