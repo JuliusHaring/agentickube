@@ -50,6 +50,15 @@ Local: `task version:current` prints the current version.
 
 Use [Task](https://taskfile.dev/) and [uv](https://docs.astral.sh/uv/) for a reproducible dev setup. From the repo root:
 
-- **Setup**: Create a venv and install dev dependencies: `uv venv` then `task dev:install` (installs from `environments/dev-requirements.txt`).
+- **Setup**:
+  ```bash
+  uv venv
+  source .venv/bin/activate   # Linux/macOS; on Windows: .venv\Scripts\activate
+  task dev:install
+  ```
+  (Installs from `environments/all-requirements.txt`.)
 - **Lint/format**: `task dev:all` runs install, format, and lint-fix.
 - **Deploy (local)**: `task deploy` runs dev:all, builds the agent and operator images, creates the `agentickube-ns` namespace, applies the CRD, clears and reapplies manifests and the example Agent. Run the operator separately (e.g. `task operator:run`) so it watches for Agent CRs.
+
+**Kubernetes in Docker Desktop**  
+For local development you can use the Kubernetes cluster built into [Docker Desktop](https://www.docker.com/products/docker-desktop/): enable it under **Settings → Kubernetes → Enable Kubernetes**, then ensure `kubectl` is available (Docker Desktop adds it to your path); the cluster will pull images from GHCR or use images you build locally (e.g. after `task deploy`).
