@@ -5,6 +5,9 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from config import llm_config
 from logic.prompt import instructions
 from logic.tools import get_tools
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 client_kwargs = {}
 if llm_config.api_key:
@@ -35,6 +38,7 @@ agent = Agent(
 
 
 def agent_loop(query: str) -> str:
+    logger.info(f"Agent loop started: {query}")
     res = agent.run_sync(user_prompt=query)
     print(res.all_messages())
     return res.output

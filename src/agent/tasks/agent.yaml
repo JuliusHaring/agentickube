@@ -1,4 +1,4 @@
 version: '3'
 
 tasks:
-  run: python src/agent/src/main.py {{.CLI_ARGS}}
+  run: PYTHONPATH="src:src/agent/src" python src/agent/src/main.py {{.CLI_ARGS}}
