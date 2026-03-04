@@ -1,0 +1,29 @@
+# Operator Deployment: watches Agent CRs and reconciles them to Deployments.
+# Requires: CRD applied, and RBAC (ServiceAccount agent-operator) in the same namespace (e.g. deploy/example-rbac.yaml).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agentickube-operator
+  namespace: agentickube-ns
+  labels:
+    app.kubernetes.io/name: agentickube-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: agentickube-operator
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: agentickube-operator
+    spec:
+      serviceAccountName: agent-operator
+      containers:
+        - name: operator
+          image: ghcr.io/juliusharing/agentickube/operator:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: AGENT_IMAGE
+              value: "ghcr.io/juliusharing/agentickube/agent:latest"
+            - name: AGENT_IMAGE_PULL_POLICY
+              value: "IfNotPresent"

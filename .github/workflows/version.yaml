@@ -123,13 +123,15 @@ jobs:
         with:
           name: release-notes
 
+      - name: Zip deploy artifacts
+        run: |
+          cd deploy && zip -r ../agentickube-deploy.zip crd.yaml example-rbac.yaml operator.yaml example-agent.yaml && cd ..
+
       - name: Create tag and release with assets
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version-and-artifacts.outputs.tag }}
           name: Release ${{ needs.version-and-artifacts.outputs.tag }}
           body_path: release_notes.md
-          files: |
-            deploy/crd.yaml
-            deploy/example-agent.yaml
+          files: agentickube-deploy.zip
           allow_updates: true
