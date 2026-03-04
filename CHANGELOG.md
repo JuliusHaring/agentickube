@@ -2,6 +2,24 @@
 
 <!-- version list -->
 
+## v1.1.0 (2026-03-04)
+
+### Chores
+
+- Add examples for deployment
+  ([`e9f7873`](https://github.com/JuliusHaring/agentickube/commit/e9f787316f361a5f9c67d1a825ecd1f101f9b052))
+
+### Continuous Integration
+
+- Add docker build and push
+  ([`81216e8`](https://github.com/JuliusHaring/agentickube/commit/81216e87307cbc7dd534f78bee424a6b2ca33dad))
+
+### Features
+
+- Add docker for operator
+  ([`7e835ba`](https://github.com/JuliusHaring/agentickube/commit/7e835ba1e961d04102249d44bb9183eba812bf9b))
+
+
 ## v1.0.0 (2026-03-04)
 
 ### Continuous Integration
