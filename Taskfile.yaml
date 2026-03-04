@@ -4,7 +4,7 @@ includes:
   docker: tasks/docker.yaml
   k8s: tasks/k8s.yaml
   dev: tasks/dev.yaml
-  agent: pkg/agent/tasks/agent.yaml
+  agent: src/agent/tasks/agent.yaml
 
 tasks:
   default:

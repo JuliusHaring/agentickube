@@ -1,7 +1,7 @@
 version: '3'
 
 tasks:
-  run-orchestrator: watchmedo auto-restart --patterns "*.py" -d pkg/operator  -- kopf run pkg/operator/main.py --namespace=test --verbose
+  run-orchestrator: watchmedo auto-restart --patterns "*.py" -d src/operator  -- kopf run src/operator/main.py --namespace=test --verbose
 
   create-ns: kubectl create namespace test || true
 
@@ -9,9 +9,9 @@ tasks:
 
   init-ns: kubectl delete ag --all -n test && kubectl delete deployment --all -n test && kubectl delete pod --all -n test
 
-  apply-crd: kubectl apply -f deploy/crd.yaml
+  apply-crd: kubectl apply -f manifests/crd.yaml
 
-  apply-folder: kubectl apply -f deploy/
+  apply-folder: kubectl apply -f manifests/
 
   apply-all:
     - task: apply-crd
