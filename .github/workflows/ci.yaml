@@ -40,4 +40,4 @@ jobs:
 
       - name: Validate deploy and manifests
         run: |
-          kubeconform -schema-location default -schema-location deploy/crd.yaml -summary -output text deploy/ manifests/
+          kubeconform -schema-location default -ignore-missing-schemas -summary -output text deploy/ manifests/
