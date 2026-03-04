@@ -1,0 +1,4 @@
+version: '3'
+
+tasks:
+  run: watchmedo auto-restart --patterns "*.py" -d src/operator  -- env PYTHONPATH=src AGENT_IMAGE=agentickube-agent:latest AGENT_IMAGE_PULL_POLICY=Never kopf run src/operator/main.py --namespace=test --verbose

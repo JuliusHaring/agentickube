@@ -5,15 +5,11 @@ includes:
   k8s: tasks/k8s.yaml
   dev: tasks/dev.yaml
   agent: src/agent/tasks/agent.yaml
+  operator: src/operator/tasks/operator.yaml
 
 tasks:
   default:
    - task: deploy
-
-  version:current:
-    desc: Print current version from VERSION file
-    cmds:
-      - 'v=$$(cat VERSION | tr -d "\n"); echo $${v#version=}'
 
   deploy:
     - task: dev:all
