@@ -1,0 +1,45 @@
+name: Version and tag
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Read VERSION
+        id: version
+        run: |
+          v=$(cat VERSION | tr -d '\n')
+          echo "version=$v" >> $GITHUB_OUTPUT
+          echo "tag=v$v" >> $GITHUB_OUTPUT
+
+      - name: Create and push tag if missing
+        run: |
+          TAG="${{ steps.version.outputs.tag }}"
+          git fetch --tags
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+      - name: Create release and upload deploy artifact
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Release ${{ steps.version.outputs.tag }}
+          files: |
+            deploy/crd.yaml
+          generate_release_notes: true
+          allow_updates: true
