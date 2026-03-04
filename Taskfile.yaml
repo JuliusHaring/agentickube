@@ -10,6 +10,11 @@ tasks:
   default:
    - task: deploy
 
+  version:current:
+    desc: Print current version from VERSION file
+    cmds:
+      - 'v=$$(cat VERSION | tr -d "\n"); echo $${v#version=}'
+
   deploy:
     - task: dev:all
     - task: docker:build-all

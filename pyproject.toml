@@ -1,0 +1,16 @@
+[project]
+name = "agentickube"
+version = "0.1.0"
+description = "Agent and operator for Kubernetes"
+readme = "README.md"
+
+[tool.semantic_release]
+branch = "main"
+version_variables = ["VERSION:version:nf"]
+commit_parser = "conventional"
+# No PyPI publish; we only tag and create GitHub release
+build_command = "true"
+
+[tool.semantic_release.changelog]
+# No exclusions; all commit types appear in the changelog
+exclude_commit_patterns = []
