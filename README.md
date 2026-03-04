@@ -1,6 +1,7 @@
 # AgenticKube
 
 [![CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
+[![CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
 
 **AgenticKube** is a Kubernetes operator that runs LLM-powered agents as first-class resources. You define an `Agent` custom resource (model, API, MCP servers, workspace, optional OpenTelemetry); the operator reconciles it into a Deployment that serves the agent workload.
 
