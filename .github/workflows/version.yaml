@@ -1,4 +1,4 @@
-name: Version and tag
+name: Version and release
 
 on:
   push:
@@ -8,76 +8,122 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  version-and-artifacts:
+    name: Version and build artifacts
     runs-on: ubuntu-latest
     concurrency:
-      group: ${{ github.workflow }}-release-${{ github.ref_name }}
+      group: ${{ github.workflow }}-version-artifacts-${{ github.ref_name }}
       cancel-in-progress: false
-
     permissions:
       contents: write
+    outputs:
+      released: ${{ steps.version.outputs.released }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
 
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
 
-      - name: Pin release branch to workflow sha
+      - name: Pin to workflow commit
         run: git reset --hard ${{ github.sha }}
 
-      - name: Semantic version release
-        id: release
-        uses: python-semantic-release/python-semantic-release@v10
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          git_committer_name: "github-actions[bot]"
-          git_committer_email: "github-actions[bot]@users.noreply.github.com"
-          build: false
-          vcs_release: true
+          python-version: "3.12"
+
+      - name: Bump version (no tag, no push)
+        id: version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          pip install python-semantic-release
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if semantic-release version --no-tag --no-push; then
+            echo "released=true" >> $GITHUB_OUTPUT
+            v=$(sed -n 's/^version=//p' VERSION)
+            echo "version=$v" >> $GITHUB_OUTPUT
+            echo "tag=v$v" >> $GITHUB_OUTPUT
+            awk '/^## v'"$v"'/{p=1; print; next} p{if(/^## /) exit; print}' CHANGELOG.md > release_notes.md
+          fi
 
       - name: Set up Docker Buildx
-        if: steps.release.outputs.released == 'true'
+        if: steps.version.outputs.released == 'true'
         uses: docker/setup-buildx-action@v3
 
       - name: Log in to Docker Hub
-        if: steps.release.outputs.released == 'true'
+        if: steps.version.outputs.released == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Build and push agent image
-        if: steps.release.outputs.released == 'true'
+        if: steps.version.outputs.released == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./src/agent/Dockerfile
           push: true
           tags: |
-            derjulezzz/agentickube-agent:${{ steps.release.outputs.version }}
-            derjulezzz/agentickube-agent:latest
+            derjulezzz/agentickube/agent:${{ steps.version.outputs.version }}
+            derjulezzz/agentickube/agent:latest
 
       - name: Build and push operator image
-        if: steps.release.outputs.released == 'true'
+        if: steps.version.outputs.released == 'true'
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./src/operator/Dockerfile
           push: true
           tags: |
-            derjulezzz/agentickube-operator:${{ steps.release.outputs.version }}
-            derjulezzz/agentickube-operator:latest
+            derjulezzz/agentickube/operator:${{ steps.version.outputs.version }}
+            derjulezzz/agentickube/operator:latest
 
-      - name: Upload deploy assets to release
-        if: steps.release.outputs.released == 'true'
+      - name: Push version commit to branch
+        if: steps.version.outputs.released == 'true'
+        run: git push origin ${{ github.ref_name }}
+
+      - name: Upload release notes
+        if: steps.version.outputs.released == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-notes
+          path: release_notes.md
+
+  publish-release:
+    name: Create tag and GitHub release
+    runs-on: ubuntu-latest
+    needs: version-and-artifacts
+    if: needs.version-and-artifacts.outputs.released == 'true'
+    concurrency:
+      group: ${{ github.workflow }}-publish-${{ github.ref_name }}
+      cancel-in-progress: false
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Download release notes
+        uses: actions/download-artifact@v4
+        with:
+          name: release-notes
+
+      - name: Create tag and release with assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.release.outputs.tag }}
-          name: Release ${{ steps.release.outputs.tag }}
-          body: ${{ steps.release.outputs.release_notes }}
+          tag_name: ${{ needs.version-and-artifacts.outputs.tag }}
+          name: Release ${{ needs.version-and-artifacts.outputs.tag }}
+          body_path: release_notes.md
           files: |
             deploy/crd.yaml
             deploy/example-agent.yaml
-            deploy/README.md
           allow_updates: true
