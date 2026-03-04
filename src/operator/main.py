@@ -3,6 +3,8 @@ Kopf operator for Agent CRs (ai.juliusharing.com).
 Reconciles Agent spec into a Deployment and deletes it on Agent deletion.
 """
 
+import os
+
 import kopf
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
@@ -17,6 +19,11 @@ AGENT_CRD_GROUP = "agents.ai.juliusharing.com"
 DEPLOYMENT_NAME_PREFIX = "agent-"
 WORKSPACE_VOLUME_NAME = "workspace"
 DEFAULT_WORKSPACE_PATH = "/workspace"
+
+# Agent container image and pull policy (set via env in operator Deployment for production).
+DEFAULT_AGENT_IMAGE = "derjulezzz/agentickube-agent:latest"
+AGENT_IMAGE = os.environ.get("AGENT_IMAGE", DEFAULT_AGENT_IMAGE)
+AGENT_IMAGE_PULL_POLICY = os.environ.get("AGENT_IMAGE_PULL_POLICY", "IfNotPresent")
 
 
 def _workspace_from_spec(spec: dict) -> tuple[str, client.V1Volume]:
@@ -115,12 +122,24 @@ def _deployment_name(agent_name: str) -> str:
     return f"{DEPLOYMENT_NAME_PREFIX}{agent_name}"
 
 
+def _image_from_spec(spec: dict) -> str:
+    """Agent container image: spec.image or operator default."""
+    return (spec.get("image") or "").strip() or AGENT_IMAGE
+
+
+def _image_pull_policy_from_spec(spec: dict) -> str:
+    """Agent image pull policy: spec.imagePullPolicy or operator default."""
+    return (spec.get("imagePullPolicy") or "").strip() or AGENT_IMAGE_PULL_POLICY
+
+
 def _make_deployment(
     name: str, namespace: str, spec: dict, body: dict
 ) -> client.V1Deployment:
     deployment_name = _deployment_name(name)
     env_vars = _env_from_spec(spec, agent_name=name)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
+    image = _image_from_spec(spec)
+    image_pull_policy = _image_pull_policy_from_spec(spec)
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
@@ -138,9 +157,9 @@ def _make_deployment(
                     containers=[
                         client.V1Container(
                             name="agent",
-                            image="derjulezzz/agentickube-agent:latest",
+                            image=image,
                             env=env_vars,
-                            image_pull_policy="Never",
+                            image_pull_policy=image_pull_policy,
                             ports=[client.V1ContainerPort(container_port=80)],
                             volume_mounts=[
                                 client.V1VolumeMount(
@@ -177,9 +196,13 @@ def update_agent(
     deployment_name = _deployment_name(name)
     env_vars = _env_from_spec(spec, agent_name=name)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
+    image = _image_from_spec(spec)
+    image_pull_policy = _image_pull_policy_from_spec(spec)
     apps = client.AppsV1Api()
     deployment = apps.read_namespaced_deployment(deployment_name, namespace)
     deployment.spec.template.spec.volumes = [workspace_volume]
+    deployment.spec.template.spec.containers[0].image = image
+    deployment.spec.template.spec.containers[0].image_pull_policy = image_pull_policy
     deployment.spec.template.spec.containers[0].env = env_vars
     deployment.spec.template.spec.containers[0].volume_mounts = [
         client.V1VolumeMount(name=WORKSPACE_VOLUME_NAME, mount_path=workspace_path)

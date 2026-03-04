@@ -38,3 +38,11 @@ Versions are managed by [python-semantic-release](https://python-semantic-releas
 - **Tag & release**: PSR creates the git tag and GitHub release; the workflow attaches `deploy/crd.yaml`, `deploy/example-agent.yaml`, and `deploy/README.md` to the release.
 
 Local: `task version:current` prints the current version.
+
+## Developing
+
+Use [Task](https://taskfile.dev/) and [uv](https://docs.astral.sh/uv/) for a reproducible dev setup. From the repo root:
+
+- **Setup**: Create a venv and install dev dependencies: `uv venv` then `task dev:install` (installs from `environments/dev-requirements.txt`).
+- **Lint/format**: `task dev:all` runs install, format, and lint-fix.
+- **Deploy (local)**: `task deploy` runs dev:all, builds the agent and operator images, creates the `test` namespace, applies the CRD, clears and reapplies manifests and the example Agent. Run the operator separately (e.g. `task k8s:run-orchestrator`) so it watches for Agent CRs; use `AGENT_IMAGE=agentickube-agent:latest` and `AGENT_IMAGE_PULL_POLICY=Never` when testing with locally built images.
