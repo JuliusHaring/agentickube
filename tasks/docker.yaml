@@ -1,7 +1,10 @@
 version: '3'
 
 tasks:
-  build-agent: docker build . -f ./src/agent/Dockerfile -t agentickube
+  build-agent: docker build . -f ./src/agent/Dockerfile -t agentickube-agent
+
+  build-operator: docker build . -f ./src/operator/Dockerfile -t agentickube-operator
 
   build-all:
     - task: build-agent
+    - task: build-operator

@@ -138,7 +138,7 @@ def _make_deployment(
                     containers=[
                         client.V1Container(
                             name="agent",
-                            image="agentickube:latest",
+                            image="derjulezzz/agentickube-agent:latest",
                             env=env_vars,
                             image_pull_policy="Never",
                             ports=[client.V1ContainerPort(container_port=80)],

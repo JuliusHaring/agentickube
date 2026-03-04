@@ -55,8 +55,19 @@ jobs:
           file: ./src/agent/Dockerfile
           push: true
           tags: |
-            derjulezzz/agentickube:${{ steps.release.outputs.version }}
-            derjulezzz/agentickube:latest
+            derjulezzz/agentickube-agent:${{ steps.release.outputs.version }}
+            derjulezzz/agentickube-agent:latest
+
+      - name: Build and push operator image
+        if: steps.release.outputs.released == 'true'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./src/operator/Dockerfile
+          push: true
+          tags: |
+            derjulezzz/agentickube-operator:${{ steps.release.outputs.version }}
+            derjulezzz/agentickube-operator:latest
 
       - name: Upload deploy assets to release
         if: steps.release.outputs.released == 'true'
