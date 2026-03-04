@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.2.0 (2026-03-04)
+
+### Chores
+
+- Add operator own tasks
+  ([`fcea9ae`](https://github.com/JuliusHaring/agentickube/commit/fcea9aecbc346b51d5bda88961c6a95d54dd95b7))
+
+### Features
+
+- Make image and pull policy exchangeable
+  ([`e216d93`](https://github.com/JuliusHaring/agentickube/commit/e216d9303ac4f4110ac06cd66bc567fde962946a))
+
+
 ## v1.1.0 (2026-03-04)
 
 ### Chores
