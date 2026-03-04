@@ -43,7 +43,7 @@ def _workspace_from_spec(spec: dict) -> tuple[str, client.V1Volume]:
     return path, volume
 
 
-def _env_from_spec(spec: dict) -> list[client.V1EnvVar]:
+def _env_from_spec(spec: dict, agent_name: str = "agent") -> list[client.V1EnvVar]:
     """Build container env vars from Agent spec (LLM + MCP)."""
     llm = spec.get("llm") or {}
     api_key_cfg = llm.get("apiKey") or {}
@@ -80,6 +80,34 @@ def _env_from_spec(spec: dict) -> list[client.V1EnvVar]:
     workspace_path, _ = _workspace_from_spec(spec)
     env_vars.append(client.V1EnvVar(name="WORKSPACE_DIR", value=workspace_path))
 
+    # Optional OpenTelemetry (OTLP). Agent derives /v1/traces and /v1/metrics from base endpoint.
+    otel = spec.get("openTelemetry") or {}
+    if otel.get("enabled") and otel.get("endpoint"):
+        endpoint = (otel.get("endpoint") or "").strip().rstrip("/")
+        env_vars.append(
+            client.V1EnvVar(name="OTEL_EXPORTER_OTLP_ENDPOINT", value=endpoint)
+        )
+        svc_name = otel.get("serviceName", "").strip() or f"agent-{agent_name}"
+        env_vars.append(client.V1EnvVar(name="OTEL_SERVICE_NAME", value=svc_name))
+        # Ensure resource has service.name for Jaeger/backends (OTEL_SERVICE_NAME takes precedence)
+        env_vars.append(
+            client.V1EnvVar(
+                name="OTEL_RESOURCE_ATTRIBUTES",
+                value=f"service.name={svc_name}",
+            )
+        )
+        ratio = otel.get("samplingRatio")
+        if ratio is not None:
+            r = max(0.0, min(1.0, float(ratio)))
+            env_vars.append(
+                client.V1EnvVar(
+                    name="OTEL_TRACES_SAMPLER", value="parentbased_traceidratio"
+                )
+            )
+            env_vars.append(
+                client.V1EnvVar(name="OTEL_TRACES_SAMPLER_ARG", value=str(r))
+            )
+
     return env_vars
 
 
@@ -91,7 +119,7 @@ def _make_deployment(
     name: str, namespace: str, spec: dict, body: dict
 ) -> client.V1Deployment:
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec)
+    env_vars = _env_from_spec(spec, agent_name=name)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
 
     deployment = client.V1Deployment(
@@ -147,7 +175,7 @@ def update_agent(
     spec: dict, name: str, namespace: str, logger: kopf.Logger, **_
 ) -> None:
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec)
+    env_vars = _env_from_spec(spec, agent_name=name)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
     apps = client.AppsV1Api()
     deployment = apps.read_namespaced_deployment(deployment_name, namespace)

@@ -11,8 +11,8 @@ tasks:
     - kubectl delete ag --all -n test
     - kubectl delete deployment --all -n test
     - kubectl delete pod --all -n test
-    - kubectl delete pvc --all -n test
-    - kubectl delete pv --all -n test
+    # - kubectl delete pvc --all -n test
+    # - kubectl delete pv --all -n test
     - kubectl delete rolebinding --all -n test
     - kubectl delete role --all -n test
     - kubectl delete serviceaccount --all -n test

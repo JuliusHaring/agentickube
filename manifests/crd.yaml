@@ -73,3 +73,22 @@ spec:
                         claimName:
                           type: string
                           description: Name of the PersistentVolumeClaim in the same namespace.
+                openTelemetry:
+                  type: object
+                  description: Optional OpenTelemetry (OTLP) export for traces/metrics.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: If true, agent exports traces to the configured endpoint.
+                    endpoint:
+                      type: string
+                      description: OTLP endpoint (e.g. http://otel-collector:4318 for HTTP, or :4317 for gRPC).
+                    serviceName:
+                      type: string
+                      description: Service name for the telemetry (defaults to agent name).
+                    samplingRatio:
+                      type: number
+                      minimum: 0
+                      maximum: 1
+                      description: Trace sampling ratio 0-1 (1 = sample all). Optional; default 1.

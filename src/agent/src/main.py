@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 from routes import query_router
-from shared.logging import get_logger
+from setup import setup_opentelemetry
 
-logger = get_logger(__name__)
-
-logger.info("Starting Agent")
 app = FastAPI(name="Agent")
 
+# Configure OTel (Logfire) before importing routes/agent so Pydantic AI instrumentation is active
+setup_opentelemetry(app)
 app.include_router(router=query_router)
 
 if __name__ == "__main__":

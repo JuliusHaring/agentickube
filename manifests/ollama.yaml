@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      initContainers:
+        - name: pull-model
+          image: ollama/ollama:latest
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "Starting Ollama server in background..."
+              ollama serve >/tmp/ollama-serve.log 2>&1 &
+              echo "Waiting for server to be ready..."
+              for i in $(seq 1 30); do
+                if ollama list 2>/dev/null; then
+                  echo "Server ready. Pulling model qwen3:1.7b..."
+                  break
+                fi
+                if [ "$i" -eq 30 ]; then
+                  echo "Timeout waiting for server" >&2
+                  exit 1
+                fi
+                sleep 2
+              done
+              ollama pull qwen3:1.7b
+              echo "Model pull complete."
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      containers:
+        - name: ollama
+          image: ollama/ollama:latest
+          args: ["serve"]
+          ports:
+            - name: http
+              containerPort: 11434
+          env:
+            - name: OLLAMA_HOST
+              value: "0.0.0.0"
+          volumeMounts:
+            - name: models
+              mountPath: /root/.ollama
+      volumes:
+        - name: models
+          persistentVolumeClaim:
+            claimName: ollama-models
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 7Gi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama
+spec:
+  selector:
+    app: ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+
