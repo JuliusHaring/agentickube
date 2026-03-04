@@ -16,6 +16,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+      packages: write
     outputs:
       released: ${{ steps.version.outputs.released }}
       version: ${{ steps.version.outputs.version }}
@@ -51,16 +52,21 @@ jobs:
             awk '/^## v'"$v"'/{p=1; print; next} p{if(/^## /) exit; print}' CHANGELOG.md > release_notes.md
           fi
 
+      - name: Set GHCR image prefix (lowercase)
+        if: steps.version.outputs.released == 'true'
+        run: echo "IMAGE_PREFIX=ghcr.io/$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
+
       - name: Set up Docker Buildx
         if: steps.version.outputs.released == 'true'
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         if: steps.version.outputs.released == 'true'
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push agent image
         if: steps.version.outputs.released == 'true'
@@ -70,8 +76,8 @@ jobs:
           file: ./src/agent/Dockerfile
           push: true
           tags: |
-            derjulezzz/agentickube/agent:${{ steps.version.outputs.version }}
-            derjulezzz/agentickube/agent:latest
+            ${{ env.IMAGE_PREFIX }}/agent:${{ steps.version.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/agent:latest
 
       - name: Build and push operator image
         if: steps.version.outputs.released == 'true'
@@ -81,8 +87,8 @@ jobs:
           file: ./src/operator/Dockerfile
           push: true
           tags: |
-            derjulezzz/agentickube/operator:${{ steps.version.outputs.version }}
-            derjulezzz/agentickube/operator:latest
+            ${{ env.IMAGE_PREFIX }}/operator:${{ steps.version.outputs.version }}
+            ${{ env.IMAGE_PREFIX }}/operator:latest
 
       - name: Push version commit to branch
         if: steps.version.outputs.released == 'true'

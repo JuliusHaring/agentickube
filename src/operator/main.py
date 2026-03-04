@@ -21,7 +21,7 @@ WORKSPACE_VOLUME_NAME = "workspace"
 DEFAULT_WORKSPACE_PATH = "/workspace"
 
 # Agent container image and pull policy (set via env in operator Deployment for production).
-DEFAULT_AGENT_IMAGE = "derjulezzz/agentickube-agent:latest"
+DEFAULT_AGENT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
 AGENT_IMAGE = os.environ.get("AGENT_IMAGE", DEFAULT_AGENT_IMAGE)
 AGENT_IMAGE_PULL_POLICY = os.environ.get("AGENT_IMAGE_PULL_POLICY", "IfNotPresent")
 

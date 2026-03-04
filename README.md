@@ -12,7 +12,7 @@ Install the CRD, run the operator, then create Agent CRs. The operator reconcile
    ```
 
 2. **Operator** (RBAC + Deployment using the operator image)
-   - From the repo: apply the manifests in `manifests/` (e.g. `manifests/rbac.yaml` and an operator Deployment that uses `derjulezzz/agentickube-operator:latest`).
+   - From the repo: apply the manifests in `manifests/` (e.g. `manifests/rbac.yaml` and an operator Deployment that uses `ghcr.io/OWNER/agentickube/operator:latest`).
    - Or use your own Deployment that runs the operator image with in-cluster config and the same RBAC.
 
 3. **Example Agent**

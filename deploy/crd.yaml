@@ -24,7 +24,7 @@ spec:
               properties:
                 image:
                   type: string
-                  description: Agent container image. Defaults to operator default (AGENT_IMAGE env or derjulezzz/agentickube-agent:latest).
+                  description: Agent container image. Defaults to operator default (AGENT_IMAGE env or ghcr.io/OWNER/agentickube/agent:latest).
                 imagePullPolicy:
                   type: string
                   enum: [Always, IfNotPresent, Never]
