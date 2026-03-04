@@ -1,0 +1,118 @@
+# --- Operator identity (use this ServiceAccount in the operator Deployment)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agent-operator
+  namespace: test
+---
+# --- Permissions for the operator: watch Agent CRs and manage Deployments (namespaced)
+# Use this Role when the operator runs in a single namespace (e.g. test).
+# For cluster-wide reconciliation, use a ClusterRole + ClusterRoleBinding instead.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-operator
+  namespace: test
+rules:
+  # Watch and reconcile Agent CRs
+  - apiGroups: ["ai.juliusharing.com"]
+    resources: ["agents"]
+    verbs: ["get", "list", "watch"]
+  # Create/update/patch/delete Deployments owned by Agent CRs
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Kopf and GC need to see Pods (owner references, status)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Emit events on Agent CRs (optional; helps with kubectl describe agent/...)
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: agent-operator
+  namespace: test
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: agent-operator
+subjects:
+  - kind: ServiceAccount
+    name: agent-operator
+    namespace: test
+---
+# --- Optional: who can manage Agent CRs (create/update/delete agents)
+# Bind this ClusterRole to users/groups to restrict who can kubectl apply/delete Agent CRs.
+# Example: bind to a group "agent-editors" or a specific user.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agent-cr-editor
+rules:
+  - apiGroups: ["ai.juliusharing.com"]
+    resources: ["agents"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+# Example: allow all authenticated users in the cluster to edit Agent CRs (relaxed).
+# Replace with a more restrictive RoleBinding (e.g. to a group or single user) as needed.
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: ClusterRoleBinding
+# metadata:
+#   name: agent-cr-editors
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: ClusterRole
+#   name: agent-cr-editor
+# subjects:
+#   - apiGroup: rbac.authorization.k8s.io
+#     kind: Group
+#     name: system:authenticated
+
+---
+# --- Who can query agents: discover Agent CRs and reach agent pods (e.g. port-forward)
+# No create/update/delete on Agent CRs; no create/delete on Deployments or Pods.
+# Bind agent-querier Role to users/groups who may only call the agent HTTP API (POST /query).
+# Note: the agent app itself has no HTTP auth; for "who can call /query" use API keys or
+# an Ingress/gateway with auth in addition to this RBAC.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: agent-querier
+  namespace: test
+rules:
+  # Discover which agents exist (names, spec summary)
+  - apiGroups: ["ai.juliusharing.com"]
+    resources: ["agents"]
+    verbs: ["get", "list", "watch"]
+  # See agent pods (to port-forward or hit from in-cluster)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+  # Port-forward to agent pod: kubectl port-forward pod/agent-my-agent-xxx 8080:80
+  - apiGroups: [""]
+    resources: ["pods/portforward"]
+    verbs: ["create"]
+  # If you expose agents via Service, allow reading so queriers can use them
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch"]
+---
+# Example: allow a group "agent-queriers" to query agents in the test namespace.
+# Replace with your user/group and namespace.
+# apiVersion: rbac.authorization.k8s.io/v1
+# kind: RoleBinding
+# metadata:
+#   name: agent-queriers
+#   namespace: test
+# roleRef:
+#   apiGroup: rbac.authorization.k8s.io
+#   kind: Role
+#   name: agent-querier
+# subjects:
+#   - apiGroup: rbac.authorization.k8s.io
+#     kind: Group
+#     name: agent-queriers

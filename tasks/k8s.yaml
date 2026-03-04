@@ -7,7 +7,21 @@ tasks:
 
   set-context: kubectl config set-context --current --namespace=test || true
 
-  init-ns: kubectl delete ag --all -n test && kubectl delete deployment --all -n test && kubectl delete pod --all -n test
+  init-ns: 
+    - kubectl delete ag --all -n test
+    - kubectl delete deployment --all -n test
+    - kubectl delete pod --all -n test
+    - kubectl delete pvc --all -n test
+    - kubectl delete pv --all -n test
+    - kubectl delete rolebinding --all -n test
+    - kubectl delete role --all -n test
+    - kubectl delete serviceaccount --all -n test
+    - kubectl delete secret --all -n test
+    - kubectl delete configmap --all -n test
+    - kubectl delete service --all -n test
+    - kubectl delete ingress --all -n test
+    - kubectl delete cronjob --all -n test
+    - kubectl delete job --all -n test
 
   apply-crd: kubectl apply -f manifests/crd.yaml
 
