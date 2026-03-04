@@ -78,5 +78,6 @@ jobs:
           body: ${{ steps.release.outputs.release_notes }}
           files: |
             deploy/crd.yaml
+            deploy/example-agent.yaml
             deploy/README.md
           allow_updates: true

@@ -27,6 +27,9 @@ tasks:
 
   apply-folder: kubectl apply -f manifests/
 
+  apply-example: kubectl apply -f deploy/example-agent.yaml
+
   apply-all:
     - task: apply-crd
     - task: apply-folder
+    - task: apply-example

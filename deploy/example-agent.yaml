@@ -1,0 +1,23 @@
+# Minimal example Agent CR. Adjust spec.llm (modelName, baseUrl, apiKey) for your LLM.
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: example
+spec:
+  llm:
+    modelName: ""          # e.g. gpt-4o or your model id
+    baseUrl: ""            # e.g. https://api.openai.com/v1 or http://ollama:11434/v1
+    # apiKey:
+    #   raw: "sk-..."      # inline (avoid in prod)
+    #   # OR from a Secret:
+    #   secretName: my-llm-secret
+    #   secretKey: api-key
+  # prompts:
+  #   systemPrompt: "You are a helpful assistant."
+  # mcpServers:
+  #   - url: https://your-mcp.example.com
+  #     type: streamable_http
+  # workspace:
+  #   path: /workspace
+  #   persistentVolumeClaim:
+  #     claimName: agent-workspace-pvc
