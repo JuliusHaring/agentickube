@@ -23,7 +23,7 @@ tasks:
     - kubectl delete cronjob --all -n test
     - kubectl delete job --all -n test
 
-  apply-crd: kubectl apply -f manifests/crd.yaml
+  apply-crd: kubectl apply -f deploy/crd.yaml
 
   apply-folder: kubectl apply -f manifests/
 
