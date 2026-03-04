@@ -27,3 +27,17 @@ jobs:
 
       - name: Ruff lint
         run: ruff check .
+
+  manifests:
+    name: Validate manifests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Kubeconform
+        uses: bmuschko/setup-kubeconform@v1
+
+      - name: Validate deploy and manifests
+        run: |
+          kubeconform -schema-location default -schema-location deploy/crd.yaml -summary -output text deploy/ manifests/

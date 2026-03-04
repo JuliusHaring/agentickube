@@ -1,7 +1,7 @@
 version: '3'
 
 tasks:
-  install: uv pip install -r environments/dev-requirements.txt
+  install: uv pip install -r environments/all-requirements.txt
 
   format: ruff format
   lint: ruff check .

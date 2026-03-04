@@ -1,6 +1,3 @@
--r operator-requirements.txt
--r agent-requirements.txt
-
 ruff
 watchdog
 pre-commit
