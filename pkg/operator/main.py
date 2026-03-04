@@ -138,7 +138,7 @@ def create_agent(
     deployment = _make_deployment(name, namespace, spec, body)
     apps = client.AppsV1Api()
     apps.create_namespaced_deployment(namespace=namespace, body=deployment)
-    logger.info("Deployment created", deployment=deployment.metadata.name)
+    logger.info("Deployment created: %s", deployment.metadata.name)
     return {"deployment": deployment.metadata.name}
 
 
@@ -157,7 +157,7 @@ def update_agent(
         client.V1VolumeMount(name=WORKSPACE_VOLUME_NAME, mount_path=workspace_path)
     ]
     apps.patch_namespaced_deployment(deployment_name, namespace, deployment)
-    logger.info("Deployment updated", deployment=deployment_name)
+    logger.info("Deployment updated: %s", deployment_name)
 
 
 @kopf.on.delete(AGENT_CRD_GROUP)
@@ -166,9 +166,9 @@ def delete_agent(name: str, namespace: str, logger: kopf.Logger, **_) -> None:
     apps = client.AppsV1Api()
     try:
         apps.delete_namespaced_deployment(deployment_name, namespace)
-        logger.info("Deployment deleted", deployment=deployment_name)
+        logger.info("Deployment deleted: %s", deployment_name)
     except ApiException as e:
         if e.status == 404:
-            logger.debug("Deployment already gone", deployment=deployment_name)
+            logger.debug("Deployment already gone: %s", deployment_name)
         else:
             raise

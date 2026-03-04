@@ -3,3 +3,4 @@
 
 ruff
 watchdog
+pre-commit
