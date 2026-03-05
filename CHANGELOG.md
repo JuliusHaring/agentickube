@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.7.0 (2026-03-05)
+
+### Features
+
+- Add history
+  ([`3f54b78`](https://github.com/JuliusHaring/agentickube/commit/3f54b789717f100276d58234d7477a1f071f37ad))
+
+
 ## v1.6.0 (2026-03-05)
 
 ### Bug Fixes
