@@ -6,8 +6,9 @@ tasks:
   set-context: kubectl config set-context --current --namespace=agentickube-ns || true
 
   init-ns: 
-    - kubectl delete ag --all -n agentickube-ns
+    - kubectl delete agent --all -n agentickube-ns
     - kubectl delete deployment --all -n agentickube-ns
+    - kubectl delete replicaset --all -n agentickube-ns
     - kubectl delete pod --all -n agentickube-ns
     # - kubectl delete pvc --all -n agentickube-ns
     # - kubectl delete pv --all -n agentickube-ns
@@ -25,14 +26,12 @@ tasks:
 
   apply-operator: kubectl apply -f deploy/operator.yaml
 
-  apply-folder: kubectl apply -f manifests/
+  apply-rbac: kubectl apply -f deploy/example-rbac.yaml
 
-  apply-example: 
-    - kubectl apply -f deploy/example-agent.yaml
-    - kubectl apply -f deploy/example-rbac.yaml
+  apply-folder: kubectl apply -f manifests/
 
   apply-all:
     - task: apply-crd
     - task: apply-operator
+    - task: apply-rbac
     - task: apply-folder
-    - task: apply-example
