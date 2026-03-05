@@ -1,7 +1,14 @@
 """Pydantic-ai tools (workspace file I/O and future tool modules)."""
 
-from logic.tools.workspace import get_workspace_tools
+from agent.src.logic.tools.mcp import mcp_toolset
+from logic.tools.workspace import workspace_toolset
+from config import llm_config
 
 
-get_tools = get_workspace_tools
-__all__ = ["get_tools"]
+def assemble_toolsets() -> list:
+    toolsets = []
+    if llm_config.workspace_dir:
+        toolsets.append(workspace_toolset())
+    if llm_config.mcp_servers:
+        toolsets.append(mcp_toolset())
+    return toolsets

@@ -7,20 +7,20 @@ from pathlib import Path
 
 from config import llm_config
 
-WORKSPACE_ROOT = Path(llm_config.workspace_dir).resolve()
-
 
 def _resolve_path(relative_path: str) -> Path:
     """Resolve path relative to workspace; raise ValueError if it escapes the workspace."""
     raw = (relative_path or "").strip()
-    # Treat empty, ".", or the workspace root itself as the workspace root
-    if not raw or raw == "." or raw == "/" or raw.rstrip("/") == str(WORKSPACE_ROOT):
-        return WORKSPACE_ROOT
-    path = (WORKSPACE_ROOT / raw).resolve()
+    if not llm_config.workspace_dir:
+        raise ValueError("Workspace directory is not set")
+    workspace_root = Path(llm_config.workspace_dir).resolve()
+    if not raw or raw == "." or raw == "/" or raw.rstrip("/") == str(workspace_root):
+        return workspace_root
+    path = (workspace_root / raw).resolve()
     try:
-        path.resolve().relative_to(WORKSPACE_ROOT)
+        path.resolve().relative_to(workspace_root)
     except ValueError:
-        raise ValueError(f"Path must stay inside workspace ({WORKSPACE_ROOT})")
+        raise ValueError(f"Path must stay inside workspace ({workspace_root})")
     return path
 
 
@@ -102,6 +102,8 @@ def list_dir(path: str = ".") -> str:
         return f"Error listing {path}: {e}"
 
 
-def get_workspace_tools() -> list:
+def workspace_toolset() -> list:
     """Return the list of workspace tool functions for pydantic-ai Agent(tools=...)."""
+    if not llm_config.workspace_dir:
+        raise ValueError("Workspace directory is not set")
     return [read_file, write_file, list_dir]
