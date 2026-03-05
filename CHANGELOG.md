@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v1.5.0 (2026-03-05)
+
+### Chores
+
+- Improve task file k8s
+  ([`a5ab7d6`](https://github.com/JuliusHaring/agentickube/commit/a5ab7d6adfd2c77a6870ee104afef8526fae4152))
+
+### Features
+
+- Add initial skills implementation
+  ([`ca5fa52`](https://github.com/JuliusHaring/agentickube/commit/ca5fa5238a7395957caf2e869dd61a4720ed1453))
+
+- Add provider choice
+  ([`c1f13c7`](https://github.com/JuliusHaring/agentickube/commit/c1f13c73a7301fc843024969c5ea87870bc90ec7))
+
+### Refactoring
+
+- Factor out toolsets entirely
+  ([`a16f8e6`](https://github.com/JuliusHaring/agentickube/commit/a16f8e6078df4a831ed6967c5cb6abf9cdb27d94))
+
+- Prefix llm config envs with LLM_
+  ([`794c336`](https://github.com/JuliusHaring/agentickube/commit/794c3361e0479f7d37c0de4a717cfb08d80c9e03))
+
+- Rename src to code
+  ([`e39f6f8`](https://github.com/JuliusHaring/agentickube/commit/e39f6f8fe9f201c730de4a7f4c587211edcc6595))
+
+
 ## v1.4.1 (2026-03-05)
 
 ### Bug Fixes
