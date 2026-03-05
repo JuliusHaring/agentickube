@@ -59,15 +59,15 @@ def _env_from_spec(spec: dict, agent_name: str = "agent") -> list[client.V1EnvVa
     secret_key = api_key_cfg.get("secretKey")
 
     env_vars = [
-        client.V1EnvVar(name="MODEL_NAME", value=llm.get("modelName", "")),
-        client.V1EnvVar(name="BASE_URL", value=llm.get("baseUrl", "")),
+        client.V1EnvVar(name="LLM_MODEL_NAME", value=llm.get("modelName", "")),
+        client.V1EnvVar(name="LLM_BASE_URL", value=llm.get("baseUrl", "")),
     ]
     if api_key:
-        env_vars.append(client.V1EnvVar(name="API_KEY", value=api_key))
+        env_vars.append(client.V1EnvVar(name="LLM_API_KEY", value=api_key))
     elif secret_name and secret_key:
         env_vars.append(
             client.V1EnvVar(
-                name="API_KEY",
+                name="LLM_API_KEY",
                 value_from=client.V1EnvVarSource(
                     secret_key_ref=client.V1SecretKeySelector(
                         name=secret_name, key=secret_key

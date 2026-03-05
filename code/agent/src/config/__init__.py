@@ -1,8 +1,8 @@
 import os
 from typing import Literal, Optional
 
-from pydantic import BaseModel, field_validator
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class MCPServerConfig(BaseModel):
@@ -26,12 +26,16 @@ def _mcp_servers_from_env() -> list[dict]:
 
 
 class LLMConfig(BaseSettings):
+    """Agent config. LLM-related values are read from LLM_* env vars (set by operator from Agent CR spec.llm)."""
+
+    model_config = SettingsConfigDict(env_prefix="LLM_")
+
     model_name: str
     base_url: Optional[str] = None
     api_key: str = ""
-    system_prompt: Optional[str] = None
+    system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
-    workspace_dir: Optional[str] = None
+    workspace_dir: Optional[str] = Field(default=None, validation_alias="WORKSPACE_DIR")
 
     @field_validator("mcp_servers", mode="before")
     @classmethod
