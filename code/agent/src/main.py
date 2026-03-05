@@ -7,7 +7,7 @@ from fastapi import FastAPI
 
 from logic.skills import seed_workspace_skills
 from routes import query_router
-from setup import setup_opentelemetry
+from logic.otel import setup_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
 
 logging.config.dictConfig(LOGGING_CONFIG)
