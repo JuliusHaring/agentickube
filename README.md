@@ -5,13 +5,15 @@
 
 **🤖 Agents in Kubernetes — declarative, yours, no lock-in.**
 
+**Try it:** peek at the [CRD](deploy/crd.yaml) and [example Agent](deploy/example-agent.yaml), then follow the install steps below.
+
 Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Your models, your cluster.
 
 | | |
 |---|---|
 | 🧩 | **One resource** — one `Agent` = one workload (HTTP, one-off Job, or Cron) |
 | 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
-| 🔧 | **MCP + SKILLS.md** — [tools & knowledge](https://modelcontextprotocol.io/) |
+| 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skills/SKILL.md) |
 | 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
 | 📦 | **Zip → apply** — CRD + operator + example, then you’re live |
 
