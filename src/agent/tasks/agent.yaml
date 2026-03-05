@@ -1,4 +1,0 @@
-version: '3'
-
-tasks:
-  run: PYTHONPATH="src:src/agent/src" MODEL_NAME="qwen3:1.7b" BASE_URL="http://localhost:11434/v1" OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_SERVICE_NAME=agent-local python src/agent/src/main.py {{.CLI_ARGS}}

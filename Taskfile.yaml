@@ -4,8 +4,8 @@ includes:
   docker: tasks/docker.yaml
   k8s: tasks/k8s.yaml
   dev: tasks/dev.yaml
-  agent: src/agent/tasks/agent.yaml
-  operator: src/operator/tasks/operator.yaml
+  agent: code/agent/tasks/agent.yaml
+  operator: code/operator/tasks/operator.yaml
 
 tasks:
   default:

@@ -93,7 +93,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./src/agent/Dockerfile
+          file: ./code/agent/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
@@ -137,7 +137,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ./src/operator/Dockerfile
+          file: ./code/operator/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
