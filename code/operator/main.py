@@ -3,11 +3,25 @@ Kopf operator for Agent CRs (ai.juliusharing.com).
 Reconciles Agent spec into a Deployment and deletes it on Agent deletion.
 """
 
+import copy
+import logging.config
 import os
 
 import kopf
+from shared.logging import get_logger, LOGGING_CONFIG
+
 from kubernetes import client, config
 from kubernetes.client.rest import ApiException
+
+# Apply shared logging so operator and kopf use the same format (colored, level, name).
+operator_logging = copy.deepcopy(LOGGING_CONFIG)
+operator_logging.setdefault("loggers", {})["kopf"] = {
+    "level": operator_logging["root"]["level"],
+    "handlers": ["console"],
+    "propagate": False,
+}
+logging.config.dictConfig(operator_logging)
+logger = get_logger(__name__)
 
 # Prefer in-cluster config when running in a pod; fall back to kubeconfig for local dev.
 try:
@@ -468,9 +482,7 @@ def _make_deployment(
 
 
 @kopf.on.create(AGENT_CRD_GROUP)
-def create_agent(
-    spec: dict, name: str, namespace: str, body: dict, logger: kopf.Logger, **_
-) -> dict:
+def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> dict:
     has_inline_cm = _ensure_skills_configmap(name, namespace, spec, body)
     deployment = _make_deployment(
         name, namespace, spec, body, has_inline_skills_cm=has_inline_cm
@@ -482,9 +494,7 @@ def create_agent(
 
 
 @kopf.on.update(AGENT_CRD_GROUP)
-def update_agent(
-    spec: dict, name: str, namespace: str, body: dict, logger: kopf.Logger, **_
-) -> None:
+def update_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     has_inline_cm = _ensure_skills_configmap(name, namespace, spec, body)
     deployment_name = _deployment_name(name)
     env_vars = (
@@ -525,7 +535,7 @@ def update_agent(
 
 
 @kopf.on.delete(AGENT_CRD_GROUP)
-def delete_agent(name: str, namespace: str, logger: kopf.Logger, **_) -> None:
+def delete_agent(name: str, namespace: str, **_) -> None:
     deployment_name = _deployment_name(name)
     apps = client.AppsV1Api()
     try:
