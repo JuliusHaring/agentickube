@@ -3,6 +3,8 @@ kind: Agent
 metadata:
   name: my-agent
 spec:
+  image: agentickube-agent:latest
+  imagePullPolicy: Never
   llm:
     modelName: qwen3:1.7b
     baseUrl: http://ollama:11434/v1

@@ -1,12 +1,11 @@
 # Minimal example Agent CR. spec.llm is mapped by the operator to LLM_* env vars
 # (LLM_MODEL_NAME, LLM_BASE_URL, LLM_API_KEY) in the agent container.
-# Optional: spec.image and spec.imagePullPolicy override the operator default.
 apiVersion: ai.juliusharing.com/v1
 kind: Agent
 metadata:
   name: example
 spec:
-  # image: ghcr.io/OWNER/agentickube/agent:latest
+  # image: ghcr.io/juliusharing/agentickube/agent:latest
   # imagePullPolicy: IfNotPresent
   llm:
     # provider: openai

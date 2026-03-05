@@ -1,4 +1,4 @@
 version: '3'
 
 tasks:
-  run: watchmedo auto-restart --patterns "*.py" -d code/operator  -- env PYTHONPATH=code AGENT_IMAGE=agentickube-agent:latest AGENT_IMAGE_PULL_POLICY=Never kopf run code/operator/main.py --namespace=agentickube-ns --verbose
+  run: watchmedo auto-restart --patterns "*.py" -d code/operator  -- env PYTHONPATH=code kopf run code/operator/main.py --namespace=agentickube-ns --verbose

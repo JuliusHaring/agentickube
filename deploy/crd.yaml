@@ -24,11 +24,11 @@ spec:
               properties:
                 image:
                   type: string
-                  description: Agent container image. Defaults to operator default (AGENT_IMAGE env or ghcr.io/OWNER/agentickube/agent:latest).
+                  description: Agent container image (default ghcr.io/juliusharing/agentickube/agent:latest).
                 imagePullPolicy:
                   type: string
                   enum: [Always, IfNotPresent, Never]
-                  description: Image pull policy for the agent container. Defaults to operator default (AGENT_IMAGE_PULL_POLICY env or IfNotPresent).
+                  description: Image pull policy for the agent container (default IfNotPresent).
                 llm:
                   type: object
                   properties:

@@ -8,7 +8,6 @@ from __future__ import annotations
 
 import copy
 import logging.config
-import os
 
 import kopf
 from kubernetes import client, config
@@ -52,10 +51,8 @@ WORKSPACE_VOL = "workspace"
 SKILLS_VOL = "custom-skills"
 SKILLS_MOUNT = "/skills/bootstrap"
 
-DEFAULT_IMAGE = os.environ.get(
-    "AGENT_IMAGE", "ghcr.io/juliusharing/agentickube/agent:latest"
-)
-DEFAULT_PULL_POLICY = os.environ.get("AGENT_IMAGE_PULL_POLICY", "IfNotPresent")
+DEFAULT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
+DEFAULT_PULL_POLICY = "IfNotPresent"
 
 
 # ── Naming helpers ───────────────────────────────────────────────────────────
@@ -461,7 +458,7 @@ def _build_deployment(
 
 
 @kopf.on.create(CRD_GROUP)
-def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> dict:
+def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     agent = AgentSpec.model_validate(spec)
     has_inline_cm = _ensure_skills_cm(name, namespace, agent, body)
     deployment = _build_deployment(name, namespace, agent, body, has_inline_cm)
@@ -469,7 +466,6 @@ def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> dict
         namespace=namespace, body=deployment
     )
     logger.info("Deployment created: %s", deployment.metadata.name)
-    return {"deployment": deployment.metadata.name}
 
 
 @kopf.on.update(CRD_GROUP)
