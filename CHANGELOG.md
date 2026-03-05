@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v1.9.0 (2026-03-05)
+
+### Bug Fixes
+
+- Make operator image work
+  ([`972b72d`](https://github.com/JuliusHaring/agentickube/commit/972b72d2d5cea7c3151d837bf9d3a5ba75c13e70))
+
+### Chores
+
+- Make local image pull possible
+  ([`fe9dff3`](https://github.com/JuliusHaring/agentickube/commit/fe9dff30f1e24696b4b9039314c97fe01ce191ef))
+
+- Make operator use logging
+  ([`09a9c72`](https://github.com/JuliusHaring/agentickube/commit/09a9c72703f1623b2df6d7b56dc8a9fe4633492f))
+
+- Move image selection to cr
+  ([`b399583`](https://github.com/JuliusHaring/agentickube/commit/b399583b6eb62fdb3beb3cd92afe71ecef95fe61))
+
+### Features
+
+- Deploy agent using gunicorn
+  ([`9a99f1a`](https://github.com/JuliusHaring/agentickube/commit/9a99f1a351d402330a89a8c3b9fce72a7b253d9c))
+
+
 ## v1.8.0 (2026-03-05)
 
 ### Features
