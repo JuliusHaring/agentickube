@@ -58,6 +58,7 @@ Use [Task](https://taskfile.dev/) and [uv](https://docs.astral.sh/uv/) for a rep
   ```
   (Installs from `environments/all-requirements.txt`.)
 - **Lint/format**: `task dev:all` runs install, format, and lint-fix.
+- **CRD and Agent examples (generated from models)**: The [CRD](deploy/crd.yaml) and [example Agent](deploy/example-agent.yaml) (and the Agent CR in `manifests/agent.yaml`) are generated from the operator’s Pydantic models in [`code/operator/models.py`](code/operator/models.py). That way the spec lives in one place: change the models, run `task operator:generate`, and the CRD and example manifests stay in sync. Deploy runs this task automatically; CI and CD run the same `task operator:generate` (CI validates the generated YAML, CD regenerates before building the release zip).
 - **Deploy (local)**: `task deploy` runs dev:all, builds the agent and operator images, creates the `agentickube-ns` namespace, applies the CRD, clears and reapplies manifests and the example Agent. Run the operator separately (e.g. `task operator:run`) so it watches for Agent CRs.
 
 **Kubernetes in Docker Desktop**  
