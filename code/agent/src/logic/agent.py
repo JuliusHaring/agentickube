@@ -1,5 +1,13 @@
 from pydantic_ai import Agent
 
+from logic.sessions import (
+    HistoryMessage,
+    load_history,
+    save_history,
+    extract_steps_from_run,
+    history_prompt,
+)
+from config import agent_config
 from logic.providers import get_model
 from logic.prompt import instructions, skills_prompt
 from logic.tools import assemble_toolsets
@@ -17,13 +25,40 @@ def _build_agent() -> Agent:
     )
 
 
-def agent_loop(query: str) -> str:
-    logger.info(f"Agent loop started: {query}")
+def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> str:
+    logger.info(
+        "Agent loop started: use_memory=%s session_id=%s query=%s",
+        use_memory,
+        session_id,
+        query[:80],
+    )
+    history: list[HistoryMessage] = load_history(session_id) if use_memory else []
+
     try:
         skills = skills_prompt()
-        full_query = f"{skills}\n\n{query}" if skills else query
+        hist = history_prompt(history)
+        logger.info(f"Skills: {skills}")
+        logger.info(f"History: {hist}")
+        pieces = [p for p in [skills, hist, query] if p]
+        full_query = "\n\n".join(pieces)
+
         res = _build_agent().run_sync(user_prompt=full_query)
+        output = res.output
+
+        if use_memory:
+            history.append(HistoryMessage(role="user", content=query))
+            steps = extract_steps_from_run(res)
+            history.append(
+                HistoryMessage(
+                    role="assistant", content=output, steps=steps if steps else None
+                )
+            )
+            max_n = max(1, agent_config.conversation_max_history)
+            if len(history) > max_n:
+                history = history[-max_n:]
+            save_history(session_id, history)
+
+        return output
     except Exception as e:
-        logger.error(f"Agent run failed: {e}")
+        logger.error("Agent run failed: %s", e)
         return f"Agent error: {e}"
-    return res.output

@@ -50,6 +50,12 @@ class AgentConfig(BaseSettings):
     skills_builtins: Optional[str] = Field(
         default=None, validation_alias="SKILLS_BUILTINS"
     )
+    conversation_memory_enabled: bool = Field(
+        default=False, validation_alias="CONVERSATION_MEMORY_ENABLED"
+    )
+    conversation_max_history: int = Field(
+        default=20, validation_alias="CONVERSATION_MAX_HISTORY"
+    )
 
     @property
     def skills_dir(self) -> str:

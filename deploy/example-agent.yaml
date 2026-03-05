@@ -45,3 +45,7 @@ spec:
   #   path: /workspace
   #   persistentVolumeClaim:
   #     claimName: agent-workspace-pvc
+  # conversation:
+  #   enabled: true              # allow sessionId in POST /query; history stored in workspace/sessions/
+  #   maxHistory: 20             # max messages per session (default 20)
+  #   # Client must send sessionId as a valid UUID in the request body when using conversation memory.

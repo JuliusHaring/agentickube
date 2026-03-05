@@ -92,6 +92,19 @@ def _env_from_spec(spec: dict, agent_name: str = "agent") -> list[client.V1EnvVa
     workspace_path, _ = _workspace_from_spec(spec)
     env_vars.append(client.V1EnvVar(name="WORKSPACE_DIR", value=workspace_path))
 
+    # Optional conversation memory (per-session history in workspace).
+    conv = spec.get("conversation") or {}
+    if conv.get("enabled"):
+        env_vars.append(
+            client.V1EnvVar(name="CONVERSATION_MEMORY_ENABLED", value="true")
+        )
+        max_hist = conv.get("maxHistory")
+        if max_hist is not None:
+            n = max(1, min(1000, int(max_hist)))
+            env_vars.append(
+                client.V1EnvVar(name="CONVERSATION_MAX_HISTORY", value=str(n))
+            )
+
     # Optional OpenTelemetry (OTLP). Agent derives /v1/traces and /v1/metrics from base endpoint.
     otel = spec.get("openTelemetry") or {}
     if otel.get("enabled") and otel.get("endpoint"):

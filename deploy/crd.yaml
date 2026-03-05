@@ -144,6 +144,23 @@ spec:
                         claimName:
                           type: string
                           description: Name of the PersistentVolumeClaim in the same namespace.
+                conversation:
+                  type: object
+                  description: >
+                    Optional conversation memory. When enabled, clients may send sessionId
+                    in POST /query (body); it must be a valid UUID. History is persisted
+                    per session under {workspace}/sessions/{uuid}.json.
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: false
+                      description: If true, enable per-session history; client must send sessionId (valid UUID) in request body to use it.
+                    maxHistory:
+                      type: integer
+                      minimum: 1
+                      maximum: 1000
+                      default: 20
+                      description: Max number of messages (user + assistant) to keep per session; oldest are trimmed.
                 # --- Pod/container runtime configuration ---
                 resources:
                   type: object
