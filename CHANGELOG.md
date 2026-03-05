@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.8.0 (2026-03-05)
+
+### Features
+
+- Add entrypoint to operator
+  ([`e87a9bf`](https://github.com/JuliusHaring/agentickube/commit/e87a9bf1d1b158c780a07269b0f8fd8406d857aa))
+
+
 ## v1.7.0 (2026-03-05)
 
 ### Features
