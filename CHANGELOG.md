@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.4.0 (2026-03-05)
+
+### Continuous Integration
+
+- Improve cache
+  ([`01f7a87`](https://github.com/JuliusHaring/agentickube/commit/01f7a878378d1f10dad61e0076477e491f191243))
+
+### Features
+
+- Add build platforms
+  ([`149961f`](https://github.com/JuliusHaring/agentickube/commit/149961f53cfb7d0b46eea2a3a2ce87b0534a5a7c))
+
+
 ## v1.3.0 (2026-03-05)
 
 ### Chores
