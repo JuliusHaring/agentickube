@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v1.6.0 (2026-03-05)
+
+### Bug Fixes
+
+- Update dockerfile imports for workspace
+  ([`12a9ed3`](https://github.com/JuliusHaring/agentickube/commit/12a9ed3a4bb580214e0f1a66be6331fb3f855433))
+
+### Chores
+
+- Add colorful unified logging
+  ([`2ecf25f`](https://github.com/JuliusHaring/agentickube/commit/2ecf25f4b81c7eb9ea3f256b557b226f157a2b46))
+
+- Update lifespan hook
+  ([`4040629`](https://github.com/JuliusHaring/agentickube/commit/404062904e02b14df0f941615209619991c6dcce))
+
+### Features
+
+- Add mounting option for the skills
+  ([`e8f183a`](https://github.com/JuliusHaring/agentickube/commit/e8f183a0fd8ad7ea47b39d6d78e6427d564bfc88))
+
+### Refactoring
+
+- Couple workspace and skills
+  ([`b80c00a`](https://github.com/JuliusHaring/agentickube/commit/b80c00a808a2a88603d115b1b1bb1cee379dcf66))
+
+
 ## v1.5.0 (2026-03-05)
 
 ### Chores
