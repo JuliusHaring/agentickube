@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v1.10.0 (2026-03-05)
+
+### Features
+
+- Create crd from pydantic model
+  ([`db98414`](https://github.com/JuliusHaring/agentickube/commit/db98414702146700872fd86243e93a584928026d))
+
+
 ## v1.9.0 (2026-03-05)
 
 ### Bug Fixes
