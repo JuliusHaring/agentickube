@@ -21,7 +21,7 @@ spec:
       containers:
         - name: operator
           image: ghcr.io/juliusharing/agentickube/operator:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           env:
             - name: AGENT_IMAGE
               value: "ghcr.io/juliusharing/agentickube/agent:latest"
