@@ -1,13 +1,36 @@
-def instructions(system_prompt: str | None, workspace_dir: str | None = None) -> str:
-    prompt = "ALWAYS USE THE TOOLS / MCP SERVERS IN EVERY QUERY BY THE USER!"
+from config import agent_config
+from logic.skills import load_skills
 
-    if workspace_dir:
-        prompt += f"You have tools for the workspace: listing, reading, and writing files. Use them for any file-related request. Paths are relative to the workspace root {workspace_dir}."
 
-    if system_prompt:
-        prompt += f"""Follow the system prompt given by the user:
+def instructions() -> str:
+    """Base system instructions, without dynamic skills."""
+    prompt = (
+        "You have tools available. Use them when the task requires it, then respond "
+        "with a text summary of what you did."
+    )
+
+    if agent_config.system_prompt:
+        prompt += f"""
+
+Follow the system prompt given by the user:
 ----
-{system_prompt}
+{agent_config.system_prompt}
 ----"""
 
+    return prompt
+
+
+def skills_prompt() -> str:
+    """Render the current skills as a text prefix for the user query."""
+    skills = load_skills()
+    if not skills:
+        return ""
+
+    prompt = (
+        "# Skills\n\n"
+        "The following skills are available to guide your behavior. "
+        "Read them first, then follow them when answering the user:\n"
+    )
+    for skill in skills:
+        prompt += f"\n---\n{skill}\n"
     return prompt

@@ -34,9 +34,21 @@ class LLMConfig(BaseSettings):
     model_name: str
     base_url: Optional[str] = None
     api_key: str = ""
+
+
+class AgentConfig(BaseSettings):
     system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
-    workspace_dir: Optional[str] = Field(default=None, validation_alias="WORKSPACE_DIR")
+    workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
+    skills_builtin_dir: str = Field(
+        default="/skills/builtin", validation_alias="SKILLS_BUILTIN_DIR"
+    )
+    skills_custom_dir: str = Field(
+        default="/skills/custom", validation_alias="SKILLS_CUSTOM_DIR"
+    )
+    skills_builtins: Optional[str] = Field(
+        default=None, validation_alias="SKILLS_BUILTINS"
+    )
 
     @field_validator("mcp_servers", mode="before")
     @classmethod
@@ -50,3 +62,4 @@ class LLMConfig(BaseSettings):
 
 
 llm_config = LLMConfig()
+agent_config = AgentConfig()

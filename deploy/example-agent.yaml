@@ -19,6 +19,21 @@ spec:
     #   secretKey: api-key
   # prompts:
   #   systemPrompt: "You are a helpful assistant."
+  # skills:
+  #   builtinSkills: []              # omit to include all; [] disables all; or list names
+  #   custom:
+  #     - name: my-skill             # inline skill content
+  #       content: |
+  #         ---
+  #         name: my-skill
+  #         description: Example inline skill.
+  #         ---
+  #         # My Skill
+  #         Custom instructions here.
+  #     - name: external-skill       # skill from a ConfigMap
+  #       configMapRef:
+  #         name: my-skill-cm
+  #         key: SKILL.md            # optional, defaults to SKILL.md
   # mcpServers:
   #   - url: https://your-mcp.example.com
   #     type: streamable_http

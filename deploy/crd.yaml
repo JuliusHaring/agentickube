@@ -54,6 +54,51 @@ spec:
                   properties:
                     systemPrompt:
                       type: string
+                functions:
+                  type: array
+                  description: Functions to attach to the agent.
+                  items:
+                    type: object
+                    required: [name]
+                    properties:
+                      name:
+                        type: string
+                skills:
+                  type: object
+                  description: Agent skills (SKILL.md files injected into the system prompt).
+                  properties:
+                    builtinSkills:
+                      description: >-
+                        Built-in skills to activate. Omit to include all, set to
+                        empty array [] to disable all, or list skill names to include.
+                      type: array
+                      items:
+                        type: string
+                    custom:
+                      type: array
+                      description: Custom skills (inline content or ConfigMap references).
+                      items:
+                        type: object
+                        required: [name]
+                        properties:
+                          name:
+                            type: string
+                            description: Skill name (used as filename, lowercase-hyphens).
+                          content:
+                            type: string
+                            description: Inline SKILL.md content (mutually exclusive with configMapRef).
+                          configMapRef:
+                            type: object
+                            description: Reference to a ConfigMap containing the skill.
+                            required: [name]
+                            properties:
+                              name:
+                                type: string
+                                description: ConfigMap name.
+                              key:
+                                type: string
+                                default: SKILL.md
+                                description: Key within the ConfigMap (default SKILL.md).
                 mcpServers:
                   type: array
                   description: MCP servers to attach to the agent (toolsets).

@@ -18,7 +18,9 @@ except config.ConfigException:
 AGENT_CRD_GROUP = "agents.ai.juliusharing.com"
 DEPLOYMENT_NAME_PREFIX = "agent-"
 WORKSPACE_VOLUME_NAME = "workspace"
+CUSTOM_SKILLS_VOLUME_NAME = "custom-skills"
 DEFAULT_WORKSPACE_PATH = "/workspace"
+DEFAULT_CUSTOM_SKILLS_PATH = "/skills/custom"
 
 # Agent container image and pull policy (set via env in operator Deployment for production).
 DEFAULT_AGENT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
@@ -210,6 +212,115 @@ def _tolerations_from_spec(spec: dict) -> list[client.V1Toleration] | None:
     return out
 
 
+def _skills_configmap_name(agent_name: str) -> str:
+    return f"agent-{agent_name}-skills"
+
+
+def _skills_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
+    """Build SKILLS_* env vars from spec.skills."""
+    skills = spec.get("skills") or {}
+    env_vars: list[client.V1EnvVar] = []
+
+    builtins = skills.get("builtinSkills")
+    if builtins is not None:
+        env_vars.append(
+            client.V1EnvVar(name="SKILLS_BUILTINS", value=",".join(builtins))
+        )
+
+    return env_vars
+
+
+def _ensure_skills_configmap(name: str, namespace: str, spec: dict, body: dict) -> bool:
+    """Create/update a ConfigMap for inline custom skills. Returns True if ConfigMap exists."""
+    skills = spec.get("skills") or {}
+    custom = skills.get("custom") or []
+    inline_skills = {
+        s["name"]: s["content"] for s in custom if s.get("content") and s.get("name")
+    }
+    if not inline_skills:
+        _delete_skills_configmap(name, namespace)
+        return False
+
+    cm_name = _skills_configmap_name(name)
+    data = {f"{k}.md": v for k, v in inline_skills.items()}
+    cm = client.V1ConfigMap(
+        metadata=client.V1ObjectMeta(
+            name=cm_name,
+            namespace=namespace,
+            labels={"app.kubernetes.io/name": "agent", "agent": name},
+        ),
+        data=data,
+    )
+    kopf.append_owner_reference(cm, body)
+
+    core = client.CoreV1Api()
+    try:
+        core.read_namespaced_config_map(cm_name, namespace)
+        core.patch_namespaced_config_map(cm_name, namespace, cm)
+    except ApiException as e:
+        if e.status == 404:
+            core.create_namespaced_config_map(namespace, cm)
+        else:
+            raise
+    return True
+
+
+def _delete_skills_configmap(name: str, namespace: str) -> None:
+    core = client.CoreV1Api()
+    try:
+        core.delete_namespaced_config_map(_skills_configmap_name(name), namespace)
+    except ApiException as e:
+        if e.status != 404:
+            raise
+
+
+def _skills_volumes_and_mounts(
+    agent_name: str, spec: dict, has_inline_cm: bool
+) -> tuple[list[client.V1Volume], list[client.V1VolumeMount]]:
+    """Build volumes and mounts for custom skills (inline ConfigMap + configMapRef skills)."""
+    skills = spec.get("skills") or {}
+    custom = skills.get("custom") or []
+
+    sources: list[client.V1VolumeProjection] = []
+
+    if has_inline_cm:
+        sources.append(
+            client.V1VolumeProjection(
+                config_map=client.V1ConfigMapProjection(
+                    name=_skills_configmap_name(agent_name),
+                )
+            )
+        )
+
+    for s in custom:
+        ref = s.get("configMapRef")
+        if ref and ref.get("name"):
+            key = ref.get("key") or "SKILL.md"
+            skill_name = s.get("name") or ref["name"]
+            sources.append(
+                client.V1VolumeProjection(
+                    config_map=client.V1ConfigMapProjection(
+                        name=ref["name"],
+                        items=[client.V1KeyToPath(key=key, path=f"{skill_name}.md")],
+                    )
+                )
+            )
+
+    if not sources:
+        return [], []
+
+    volume = client.V1Volume(
+        name=CUSTOM_SKILLS_VOLUME_NAME,
+        projected=client.V1ProjectedVolumeSource(sources=sources),
+    )
+    mount = client.V1VolumeMount(
+        name=CUSTOM_SKILLS_VOLUME_NAME,
+        mount_path=DEFAULT_CUSTOM_SKILLS_PATH,
+        read_only=True,
+    )
+    return [volume], [mount]
+
+
 def _extra_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
     """Build extra env vars from spec.env (name/value or valueFrom)."""
     env_spec = spec.get("env") or []
@@ -246,11 +357,22 @@ def _extra_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
 
 
 def _make_deployment(
-    name: str, namespace: str, spec: dict, body: dict
+    name: str,
+    namespace: str,
+    spec: dict,
+    body: dict,
+    has_inline_skills_cm: bool = False,
 ) -> client.V1Deployment:
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec, agent_name=name) + _extra_env_from_spec(spec)
+    env_vars = (
+        _env_from_spec(spec, agent_name=name)
+        + _skills_env_from_spec(spec)
+        + _extra_env_from_spec(spec)
+    )
     workspace_path, workspace_volume = _workspace_from_spec(spec)
+    skills_volumes, skills_mounts = _skills_volumes_and_mounts(
+        name, spec, has_inline_skills_cm
+    )
     image = _image_from_spec(spec)
     image_pull_policy = _image_pull_policy_from_spec(spec)
     resources = _resources_from_spec(spec)
@@ -260,24 +382,26 @@ def _make_deployment(
     tolerations = _tolerations_from_spec(spec)
     service_account = (spec.get("serviceAccountName") or "").strip() or None
 
+    volume_mounts = [
+        client.V1VolumeMount(
+            name=WORKSPACE_VOLUME_NAME,
+            mount_path=workspace_path,
+        )
+    ] + skills_mounts
+
     container = client.V1Container(
         name="agent",
         image=image,
         env=env_vars,
         image_pull_policy=image_pull_policy,
         ports=[client.V1ContainerPort(container_port=80)],
-        volume_mounts=[
-            client.V1VolumeMount(
-                name=WORKSPACE_VOLUME_NAME,
-                mount_path=workspace_path,
-            )
-        ],
+        volume_mounts=volume_mounts,
         resources=resources,
         security_context=container_security_context,
     )
 
     pod_spec = client.V1PodSpec(
-        volumes=[workspace_volume],
+        volumes=[workspace_volume] + skills_volumes,
         containers=[container],
         security_context=pod_security_context,
         node_selector=node_selector,
@@ -309,7 +433,10 @@ def _make_deployment(
 def create_agent(
     spec: dict, name: str, namespace: str, body: dict, logger: kopf.Logger, **_
 ) -> dict:
-    deployment = _make_deployment(name, namespace, spec, body)
+    has_inline_cm = _ensure_skills_configmap(name, namespace, spec, body)
+    deployment = _make_deployment(
+        name, namespace, spec, body, has_inline_skills_cm=has_inline_cm
+    )
     apps = client.AppsV1Api()
     apps.create_namespaced_deployment(namespace=namespace, body=deployment)
     logger.info("Deployment created: %s", deployment.metadata.name)
@@ -318,18 +445,26 @@ def create_agent(
 
 @kopf.on.update(AGENT_CRD_GROUP)
 def update_agent(
-    spec: dict, name: str, namespace: str, logger: kopf.Logger, **_
+    spec: dict, name: str, namespace: str, body: dict, logger: kopf.Logger, **_
 ) -> None:
+    has_inline_cm = _ensure_skills_configmap(name, namespace, spec, body)
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec, agent_name=name) + _extra_env_from_spec(spec)
+    env_vars = (
+        _env_from_spec(spec, agent_name=name)
+        + _skills_env_from_spec(spec)
+        + _extra_env_from_spec(spec)
+    )
     workspace_path, workspace_volume = _workspace_from_spec(spec)
+    skills_volumes, skills_mounts = _skills_volumes_and_mounts(
+        name, spec, has_inline_cm
+    )
     image = _image_from_spec(spec)
     image_pull_policy = _image_pull_policy_from_spec(spec)
     apps = client.AppsV1Api()
     deployment = apps.read_namespaced_deployment(deployment_name, namespace)
 
     pod_spec = deployment.spec.template.spec
-    pod_spec.volumes = [workspace_volume]
+    pod_spec.volumes = [workspace_volume] + skills_volumes
     pod_spec.security_context = _pod_security_context_from_spec(spec)
     pod_spec.node_selector = spec.get("nodeSelector")
     pod_spec.tolerations = _tolerations_from_spec(spec)
@@ -343,7 +478,7 @@ def update_agent(
     container.env = env_vars
     container.volume_mounts = [
         client.V1VolumeMount(name=WORKSPACE_VOLUME_NAME, mount_path=workspace_path)
-    ]
+    ] + skills_mounts
     container.resources = _resources_from_spec(spec)
     container.security_context = _container_security_context_from_spec(spec)
 

@@ -1,0 +1,163 @@
+"""Load SKILL.md files and code/ tool functions from skill directories."""
+
+import importlib.util
+import inspect
+import sys
+from collections.abc import Callable
+from pathlib import Path
+
+from shared.logging import get_logger
+from config import agent_config
+
+logger = get_logger(__name__)
+
+
+def _read_skill(path: Path) -> str | None:
+    """Read a SKILL.md file and return its content, or None on error."""
+    try:
+        return path.read_text(encoding="utf-8").strip()
+    except Exception as e:
+        logger.warning("Failed to read skill %s: %s", path, e)
+        return None
+
+
+def _discover_skills(directory: str) -> dict[str, Path]:
+    """Discover skills in a directory. Returns {name: path_to_SKILL.md}.
+
+    Supports two layouts:
+      directory/skill-name/SKILL.md  (subdirectory per skill)
+      directory/skill-name.md        (flat file)
+    """
+    root = Path(directory)
+    logger.info(f"Discovering skills in {root}")
+    if not root.is_dir():
+        return {}
+
+    skills: dict[str, Path] = {}
+    for child in sorted(root.iterdir()):
+        if child.is_dir():
+            skill_md = child / "SKILL.md"
+            if skill_md.is_file():
+                skills[child.name] = skill_md
+        elif child.is_file() and child.suffix == ".md":
+            skills[child.stem] = child
+    return skills
+
+
+def _discover_skill_dirs(directory: str) -> dict[str, Path]:
+    """Discover skill directories (not flat .md files) that have a code/ subfolder."""
+    root = Path(directory)
+    if not root.is_dir():
+        return {}
+    dirs: dict[str, Path] = {}
+    for child in sorted(root.iterdir()):
+        if (
+            child.is_dir()
+            and (child / "SKILL.md").is_file()
+            and (child / "code").is_dir()
+        ):
+            dirs[child.name] = child
+    return dirs
+
+
+def _import_module_from_path(name: str, path: Path):
+    """Dynamically import a Python module from a file path."""
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _collect_tools_from_skill(skill_name: str, skill_dir: Path) -> list[Callable]:
+    """Import all .py files in skill_dir/code/ and collect public functions."""
+    code_dir = skill_dir / "code"
+    tools: list[Callable] = []
+    for py_file in sorted(code_dir.glob("*.py")):
+        module_name = f"skill_tools.{skill_name}.{py_file.stem}"
+        try:
+            module = _import_module_from_path(module_name, py_file)
+        except Exception as e:
+            logger.warning("Failed to import skill code %s: %s", py_file, e)
+            continue
+        for func_name, func in inspect.getmembers(module, inspect.isfunction):
+            if func_name.startswith("_"):
+                continue
+            if func.__module__ != module_name:
+                continue
+            logger.info("Registered tool %s from skill %s", func_name, skill_name)
+            tools.append(func)
+    return tools
+
+
+def _load_tools_from(
+    directory: str, label: str, filter_names: list[str] | None = None
+) -> list[Callable]:
+    """Discover skill dirs with code/ in a directory and load their tools."""
+    found = _discover_skill_dirs(directory)
+    if filter_names is not None:
+        found = {k: v for k, v in found.items() if k in filter_names}
+    tools: list[Callable] = []
+    for name, skill_dir in found.items():
+        skill_tools = _collect_tools_from_skill(name, skill_dir)
+        if skill_tools:
+            logger.info(
+                "Loaded %d tool(s) from %s skill: %s", len(skill_tools), label, name
+            )
+            tools.extend(skill_tools)
+    return tools
+
+
+def _load_from(
+    directory: str, label: str, filter_names: list[str] | None = None
+) -> list[str]:
+    """Discover and load skills from a directory, optionally filtering by name."""
+    found = _discover_skills(directory)
+    if filter_names is not None:
+        found = {k: v for k, v in found.items() if k in filter_names}
+    contents: list[str] = []
+    for name, path in found.items():
+        text = _read_skill(path)
+        if text:
+            logger.info("Loaded %s skill: %s", label, name)
+            contents.append(text)
+    return contents
+
+
+def load_skills(
+    builtin_dir: str = agent_config.skills_builtin_dir,
+    custom_dir: str = agent_config.skills_custom_dir,
+    builtin_filter: list[str] | None = None,
+) -> list[str]:
+    """Load skill contents from the configured skills directories.
+
+    Sources (in order):
+      1. Built-in skills shipped in the image (filtered by builtin_filter).
+      2. Custom / user-defined skills mounted or written into the custom dir.
+    """
+    contents: list[str] = []
+    contents.extend(_load_from(builtin_dir, "builtin", builtin_filter))
+    contents.extend(_load_from(custom_dir, "custom"))
+
+    logger.info("Loaded %d skills total", len(contents))
+    return contents
+
+
+def load_skill_tools(
+    builtin_dir: str = agent_config.skills_builtin_dir,
+    custom_dir: str = agent_config.skills_custom_dir,
+    builtin_filter: list[str] | None = None,
+) -> list[Callable]:
+    """Load Python tool functions from all skill sources.
+
+    Scans the same directories as load_skills(), but looks for code/*.py inside
+    each skill directory and imports public functions as agent tools.
+    """
+    tools: list[Callable] = []
+    tools.extend(_load_tools_from(builtin_dir, "builtin", builtin_filter))
+    tools.extend(_load_tools_from(custom_dir, "custom"))
+
+    logger.info("Loaded %d skill tools total", len(tools))
+    return tools

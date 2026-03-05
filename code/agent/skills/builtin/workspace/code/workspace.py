@@ -1,19 +1,16 @@
-"""
-Pydantic-ai tools for reading/writing files in the agent workspace (WORKSPACE_DIR).
-Paths are relative to the workspace root; path traversal outside the workspace is rejected.
-"""
+"""Workspace file tools: read, write, and list files relative to WORKSPACE_DIR."""
 
+import os
 from pathlib import Path
-
-from config import llm_config
 
 
 def _resolve_path(relative_path: str) -> Path:
     """Resolve path relative to workspace; raise ValueError if it escapes the workspace."""
-    raw = (relative_path or "").strip()
-    if not llm_config.workspace_dir:
+    workspace_dir = os.environ.get("WORKSPACE_DIR")
+    if not workspace_dir:
         raise ValueError("Workspace directory is not set")
-    workspace_root = Path(llm_config.workspace_dir).resolve()
+    raw = (relative_path or "").strip()
+    workspace_root = Path(workspace_dir).resolve()
     if not raw or raw == "." or raw == "/" or raw.rstrip("/") == str(workspace_root):
         return workspace_root
     path = (workspace_root / raw).resolve()
@@ -62,7 +59,6 @@ def write_file(path: str, content: str) -> str:
 
 
 def _list_dir_recursive(dir_path: Path, base: Path) -> list[str]:
-    """Yield relative path strings (directories with /) under dir_path, sorted."""
     lines = []
     try:
         entries = sorted(
@@ -100,10 +96,3 @@ def list_dir(path: str = ".") -> str:
         return "\n".join(lines) if lines else "(empty)"
     except OSError as e:
         return f"Error listing {path}: {e}"
-
-
-def workspace_toolset() -> list:
-    """Return the list of workspace tool functions for pydantic-ai Agent(tools=...)."""
-    if not llm_config.workspace_dir:
-        raise ValueError("Workspace directory is not set")
-    return [read_file, write_file, list_dir]
