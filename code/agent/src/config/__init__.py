@@ -73,5 +73,9 @@ class AgentConfig(BaseSettings):
         return []
 
 
+class AgentCLIConfig(AgentConfig):
+    agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
+
+
 llm_config = LLMConfig()
 agent_config = AgentConfig()
