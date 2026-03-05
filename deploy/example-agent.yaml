@@ -9,6 +9,7 @@ spec:
   # image: ghcr.io/OWNER/agentickube/agent:latest
   # imagePullPolicy: IfNotPresent
   llm:
+    # provider: openai
     modelName: ""          # e.g. gpt-4o or your model id
     baseUrl: ""            # e.g. https://api.openai.com/v1 or http://ollama:11434/v1
     # apiKey:

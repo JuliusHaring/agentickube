@@ -76,6 +76,9 @@ def _env_from_spec(spec: dict, agent_name: str = "agent") -> list[client.V1EnvVa
             )
         )
 
+    if llm.get("type"):
+        env_vars.append(client.V1EnvVar(name="LLM_TYPE", value=llm.get("type")))
+
     for i, s in enumerate(spec.get("mcpServers") or [], start=1):
         url = (s.get("url") or "").strip()
         transport = (s.get("type") or "streamable_http").strip().lower()

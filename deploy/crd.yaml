@@ -32,6 +32,10 @@ spec:
                 llm:
                   type: object
                   properties:
+                    provider:
+                      type: string
+                      enum: [openai, google, huggingface, ollama]
+                      description: LLM provider (default openai).
                     modelName:
                       type: string
                     baseUrl:

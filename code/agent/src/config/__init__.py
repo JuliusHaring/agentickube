@@ -30,6 +30,7 @@ class LLMConfig(BaseSettings):
 
     model_config = SettingsConfigDict(env_prefix="LLM_")
 
+    provider: Literal["openai", "google", "huggingface", "ollama"] = "openai"
     model_name: str
     base_url: Optional[str] = None
     api_key: str = ""
