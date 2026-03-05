@@ -183,6 +183,15 @@ jobs:
         with:
           name: release-notes
 
+      - name: Install Task
+        uses: arduino/setup-task@v2
+
+      - name: Install generator dependencies
+        run: pip install -r environments/shared-requirements.txt
+
+      - name: Generate CRD and Agent examples from models
+        run: task operator:generate
+
       - name: Zip deploy artifacts
         run: |
           cd deploy && zip -r ../agentickube-deploy.zip crd.yaml example-rbac.yaml operator.yaml example-agent.yaml && cd ..

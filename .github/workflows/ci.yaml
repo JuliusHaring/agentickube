@@ -29,11 +29,25 @@ jobs:
         run: ruff check .
 
   manifests:
-    name: Validate manifests
+    name: Generate and validate manifests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Task
+        uses: arduino/setup-task@v2
+
+      - name: Install generator dependencies
+        run: pip install -r environments/shared-requirements.txt
+
+      - name: Generate CRD and Agent examples from models
+        run: task operator:generate
 
       - name: Set up Kubeconform
         uses: bmuschko/setup-kubeconform@v1
