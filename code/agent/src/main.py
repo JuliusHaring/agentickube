@@ -1,11 +1,15 @@
 from fastapi import FastAPI
 import uvicorn
 
+from logic.skills import seed_workspace_skills
 from routes import query_router
 from setup import setup_opentelemetry
 from shared.logging import get_logger, LOGGING_CONFIG
 
 logger = get_logger(__name__)
+
+# Seed operator-provided skills (bootstrap volume) into workspace before serving requests.
+seed_workspace_skills()
 
 app = FastAPI(title="Agent")
 

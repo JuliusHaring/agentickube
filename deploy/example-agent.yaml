@@ -34,12 +34,10 @@ spec:
   #       configMapRef:
   #         name: my-skill-cm
   #         key: SKILL.md            # optional, defaults to SKILL.md
-  #   customFolder:
+  #   bootstrap:
   #     configMapRef:
-  #       name: my-skills-folder     # ConfigMap keys = paths e.g. "skill/SKILL.md", "skill/code/tool.py"
-  #     # OR mount a PVC (takes precedence if both set):
-  #     # persistentVolumeClaim:
-  #     #   claimName: agent-skills-pvc
+  #       name: my-skills-cm   # ConfigMap keys = paths e.g. "my-skill/SKILL.md", "my-skill/code/tool.py"
+  #                            # Seeded into {workspace}/skills/ at startup alongside built-in skills.
   # mcpServers:
   #   - url: https://your-mcp.example.com
   #     type: streamable_http

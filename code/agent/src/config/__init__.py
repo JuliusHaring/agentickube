@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
@@ -43,12 +44,17 @@ class AgentConfig(BaseSettings):
     skills_builtin_dir: str = Field(
         default="/skills/builtin", validation_alias="SKILLS_BUILTIN_DIR"
     )
-    skills_custom_dir: str = Field(
-        default="/skills/custom", validation_alias="SKILLS_CUSTOM_DIR"
+    skills_bootstrap_dir: Optional[str] = Field(
+        default=None, validation_alias="SKILLS_BOOTSTRAP_DIR"
     )
     skills_builtins: Optional[str] = Field(
         default=None, validation_alias="SKILLS_BUILTINS"
     )
+
+    @property
+    def skills_dir(self) -> str:
+        """Runtime skills directory — always inside the workspace."""
+        return str(Path(self.workspace_dir) / "skills")
 
     @field_validator("mcp_servers", mode="before")
     @classmethod

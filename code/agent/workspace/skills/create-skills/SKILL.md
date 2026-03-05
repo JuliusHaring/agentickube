@@ -9,8 +9,8 @@ When the user asks you to create a skill, you MUST write it to disk immediately 
 
 ## Workflow
 
-1. Create `skills/custom/<skill-name>/SKILL.md` in your workspace using your file write tool.
-2. If the skill needs executable tools, also create `skills/custom/<skill-name>/code/<tool>.py`.
+1. Create `skills/<skill-name>/SKILL.md` in your workspace using your file write tool.
+2. If the skill needs executable tools, also create `skills/<skill-name>/code/<tool>.py`.
 3. Confirm to the user: the file path(s) and a one-line summary.
 
 That's it. Write the files. Don't explain Kubernetes, ConfigMaps, or YAML configuration.
@@ -18,7 +18,7 @@ That's it. Write the files. Don't explain Kubernetes, ConfigMaps, or YAML config
 ## Skill Directory Layout
 
 ```
-skills/code/<skill-name>/
+skills/<skill-name>/
   SKILL.md              # required: prompt injected into system instructions
   code/                 # optional: Python tool functions
     my_tool.py          # public functions become agent tools automatically

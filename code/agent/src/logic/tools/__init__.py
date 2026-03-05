@@ -10,12 +10,9 @@ from logic.tools.mcp import mcp_toolset
 def assemble_toolsets() -> list:
     toolsets = []
 
-    builtin_filter = None
-    if agent_config.skills_builtins is not None:
-        raw = agent_config.skills_builtins.strip()
-        builtin_filter = [s.strip() for s in raw.split(",") if s.strip()] if raw else []
-
-    skill_tools = load_skill_tools(builtin_filter=builtin_filter)
+    # Built-in skill filtering is applied at seed time (seed_workspace_skills).
+    # By the time we load tools, workspace/skills/ already has the right set.
+    skill_tools = load_skill_tools()
     if skill_tools:
         toolsets.append(FunctionToolset(tools=skill_tools))
 

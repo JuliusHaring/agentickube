@@ -99,28 +99,21 @@ spec:
                                 type: string
                                 default: SKILL.md
                                 description: Key within the ConfigMap (default SKILL.md).
-                    customFolder:
+                    bootstrap:
                       type: object
                       description: >
-                        Optional custom skills folder at /skills/custom. Use either
-                        configMapRef (keys as paths e.g. "my-skill/SKILL.md") or
-                        persistentVolumeClaim (full directory from a PVC). PVC takes precedence if both set.
+                        Optional ConfigMap seeded into {workspace}/skills/ on agent startup.
+                        Keys in the ConfigMap are relative file paths such as
+                        "my-skill/SKILL.md" or "my-skill/code/tool.py".
                       properties:
                         configMapRef:
                           type: object
-                          description: ConfigMap containing a full skills tree (keys = relative file paths).
+                          description: ConfigMap containing a skills tree (keys = relative file paths).
                           required: [name]
                           properties:
                             name:
                               type: string
                               description: ConfigMap name.
-                        persistentVolumeClaim:
-                          type: object
-                          description: If set, mount this PVC at /skills/custom (takes precedence over configMapRef).
-                          properties:
-                            claimName:
-                              type: string
-                              description: Name of the PersistentVolumeClaim in the same namespace.
                 mcpServers:
                   type: array
                   description: MCP servers to attach to the agent (toolsets).

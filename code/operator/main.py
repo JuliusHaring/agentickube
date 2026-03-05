@@ -20,7 +20,7 @@ DEPLOYMENT_NAME_PREFIX = "agent-"
 WORKSPACE_VOLUME_NAME = "workspace"
 CUSTOM_SKILLS_VOLUME_NAME = "custom-skills"
 DEFAULT_WORKSPACE_PATH = "/workspace"
-DEFAULT_CUSTOM_SKILLS_PATH = "/skills/custom"
+SKILLS_BOOTSTRAP_PATH = "/skills/bootstrap"
 
 # Agent container image and pull policy (set via env in operator Deployment for production).
 DEFAULT_AGENT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
@@ -216,10 +216,22 @@ def _skills_configmap_name(agent_name: str) -> str:
     return f"agent-{agent_name}-skills"
 
 
-def _skills_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
+def _skills_env_from_spec(
+    spec: dict, has_inline_cm: bool = False
+) -> list[client.V1EnvVar]:
     """Build SKILLS_* env vars from spec.skills."""
     skills = spec.get("skills") or {}
     env_vars: list[client.V1EnvVar] = []
+
+    # Tell the agent where to find operator-provided skills to seed into workspace on startup.
+    items = skills.get("items") or []
+    folder = skills.get("bootstrap") or {}
+    has_cm_folder = bool((folder.get("configMapRef") or {}).get("name"))
+    has_item_refs = any(s.get("configMapRef") for s in items)
+    if has_inline_cm or has_cm_folder or has_item_refs:
+        env_vars.append(
+            client.V1EnvVar(name="SKILLS_BOOTSTRAP_DIR", value=SKILLS_BOOTSTRAP_PATH)
+        )
 
     builtins = skills.get("builtinSkills")
     if builtins is not None:
@@ -277,28 +289,15 @@ def _delete_skills_configmap(name: str, namespace: str) -> None:
 def _skills_volumes_and_mounts(
     agent_name: str, spec: dict, has_inline_cm: bool
 ) -> tuple[list[client.V1Volume], list[client.V1VolumeMount]]:
-    """Build volumes and mounts for custom skills (inline + items + customFolder ConfigMap or PVC)."""
+    """Build a projected bootstrap volume from operator-provided skills.
+
+    All sources are merged into /skills/bootstrap (read-only). The agent seeds
+    these into the workspace on startup; skills are read/written from there.
+    """
     skills = spec.get("skills") or {}
     custom = skills.get("items") or []
-    folder = skills.get("customFolder") or {}
+    folder = skills.get("bootstrap") or {}
 
-    # customFolder.persistentVolumeClaim: mount PVC at /skills/custom (no projected merge).
-    pvc = folder.get("persistentVolumeClaim") or {}
-    claim_name = (pvc.get("claimName") or "").strip()
-    if claim_name:
-        volume = client.V1Volume(
-            name=CUSTOM_SKILLS_VOLUME_NAME,
-            persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
-                claim_name=claim_name
-            ),
-        )
-        mount = client.V1VolumeMount(
-            name=CUSTOM_SKILLS_VOLUME_NAME,
-            mount_path=DEFAULT_CUSTOM_SKILLS_PATH,
-        )
-        return [volume], [mount]
-
-    # Projected volume: inline ConfigMap + customFolder.configMapRef + items (configMapRef).
     sources: list[client.V1VolumeProjection] = []
 
     if has_inline_cm:
@@ -341,7 +340,7 @@ def _skills_volumes_and_mounts(
     )
     mount = client.V1VolumeMount(
         name=CUSTOM_SKILLS_VOLUME_NAME,
-        mount_path=DEFAULT_CUSTOM_SKILLS_PATH,
+        mount_path=SKILLS_BOOTSTRAP_PATH,
         read_only=True,
     )
     return [volume], [mount]
@@ -392,7 +391,7 @@ def _make_deployment(
     deployment_name = _deployment_name(name)
     env_vars = (
         _env_from_spec(spec, agent_name=name)
-        + _skills_env_from_spec(spec)
+        + _skills_env_from_spec(spec, has_inline_cm=has_inline_skills_cm)
         + _extra_env_from_spec(spec)
     )
     workspace_path, workspace_volume = _workspace_from_spec(spec)
@@ -477,7 +476,7 @@ def update_agent(
     deployment_name = _deployment_name(name)
     env_vars = (
         _env_from_spec(spec, agent_name=name)
-        + _skills_env_from_spec(spec)
+        + _skills_env_from_spec(spec, has_inline_cm=has_inline_cm)
         + _extra_env_from_spec(spec)
     )
     workspace_path, workspace_volume = _workspace_from_spec(spec)

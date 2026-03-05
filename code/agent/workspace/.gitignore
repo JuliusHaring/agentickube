@@ -1,0 +1,6 @@
+# Ignore all workspace runtime contents, but keep the skills directory tracked.
+*
+!.gitignore
+!skills/
+!skills/**
+__pycache__/

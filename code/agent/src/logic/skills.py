@@ -2,6 +2,7 @@
 
 import importlib.util
 import inspect
+import shutil
 import sys
 from collections.abc import Callable
 from pathlib import Path
@@ -126,38 +127,78 @@ def _load_from(
     return contents
 
 
-def load_skills(
+def seed_workspace_skills(
     builtin_dir: str = agent_config.skills_builtin_dir,
-    custom_dir: str = agent_config.skills_custom_dir,
-    builtin_filter: list[str] | None = None,
-) -> list[str]:
-    """Load skill contents from the configured skills directories.
+    bootstrap_dir: str | None = None,
+    workspace_dir: str = agent_config.workspace_dir,
+) -> None:
+    """Seed all skills into {workspace}/skills/ on startup.
 
-    Sources (in order):
-      1. Built-in skills shipped in the image (filtered by builtin_filter).
-      2. Custom / user-defined skills mounted or written into the custom dir.
+    Sources (both overwrite existing files so the image/CR stays authoritative):
+      1. Built-in skills from the image, filtered by SKILLS_BUILTINS env var.
+      2. Operator-provided bootstrap skills (flat *.md → <stem>/SKILL.md; dirs copied as-is).
+
+    After seeding, {workspace}/skills/ is the single source of truth.
+    Agent-created skills are written there directly at runtime.
     """
-    contents: list[str] = []
-    contents.extend(_load_from(builtin_dir, "builtin", builtin_filter))
-    contents.extend(_load_from(custom_dir, "custom"))
+    skills_dir = Path(workspace_dir) / "skills"
+    skills_dir.mkdir(parents=True, exist_ok=True)
 
+    # Compute builtin filter from config (SKILLS_BUILTINS env var).
+    builtin_filter: list[str] | None = None
+    if agent_config.skills_builtins is not None:
+        raw = agent_config.skills_builtins.strip()
+        builtin_filter = [s.strip() for s in raw.split(",") if s.strip()] if raw else []
+
+    # 1. Seed built-in skills from the image directory.
+    builtin_root = Path(builtin_dir)
+    if builtin_root.is_dir():
+        for child in sorted(builtin_root.iterdir()):
+            if child.is_dir() and (child / "SKILL.md").is_file():
+                if builtin_filter is not None and child.name not in builtin_filter:
+                    logger.debug(
+                        "Skipping built-in skill '%s' (filtered out)", child.name
+                    )
+                    continue
+                dest = skills_dir / child.name
+                shutil.copytree(str(child), str(dest), dirs_exist_ok=True)
+                logger.info("Seeded built-in skill '%s' into workspace", child.name)
+
+    # 2. Seed operator-provided bootstrap skills (ConfigMap-sourced).
+    if bootstrap_dir is None:
+        bootstrap_dir = agent_config.skills_bootstrap_dir
+    if not bootstrap_dir:
+        return
+    bootstrap = Path(bootstrap_dir)
+    if not bootstrap.is_dir():
+        logger.warning("Skills bootstrap dir not found: %s", bootstrap_dir)
+        return
+
+    for entry in sorted(bootstrap.iterdir()):
+        if entry.is_file() and entry.suffix == ".md":
+            dest = skills_dir / entry.stem / "SKILL.md"
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_text(entry.read_text(encoding="utf-8"))
+            logger.info("Seeded skill '%s' from bootstrap", entry.stem)
+        elif entry.is_dir():
+            dest_dir = skills_dir / entry.name
+            shutil.copytree(str(entry), str(dest_dir), dirs_exist_ok=True)
+            logger.info("Seeded skill directory '%s' from bootstrap", entry.name)
+
+
+def load_skills() -> list[str]:
+    """Load all skills from {workspace}/skills/.
+
+    Built-ins and operator-provided skills are seeded there at startup.
+    Agent-created skills are written there at runtime and picked up immediately.
+    """
+    contents = _load_from(agent_config.skills_dir, "workspace")
     logger.info("Loaded %d skills total", len(contents))
     return contents
 
 
-def load_skill_tools(
-    builtin_dir: str = agent_config.skills_builtin_dir,
-    custom_dir: str = agent_config.skills_custom_dir,
-    builtin_filter: list[str] | None = None,
-) -> list[Callable]:
-    """Load Python tool functions from all skill sources.
-
-    Scans the same directories as load_skills(), but looks for code/*.py inside
-    each skill directory and imports public functions as agent tools.
-    """
-    tools: list[Callable] = []
-    tools.extend(_load_tools_from(builtin_dir, "builtin", builtin_filter))
-    tools.extend(_load_tools_from(custom_dir, "custom"))
-
+def load_skill_tools() -> list[Callable]:
+    """Load Python tool functions from {workspace}/skills/."""
+    tools = _load_tools_from(agent_config.skills_dir, "workspace")
     logger.info("Loaded %d skill tools total", len(tools))
     return tools
