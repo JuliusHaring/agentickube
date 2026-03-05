@@ -74,9 +74,9 @@ spec:
                       type: array
                       items:
                         type: string
-                    custom:
+                    items:
                       type: array
-                      description: Custom skills (inline content or ConfigMap references).
+                      description: Individual skills (inline content or ConfigMap references).
                       items:
                         type: object
                         required: [name]
@@ -99,6 +99,28 @@ spec:
                                 type: string
                                 default: SKILL.md
                                 description: Key within the ConfigMap (default SKILL.md).
+                    customFolder:
+                      type: object
+                      description: >
+                        Optional custom skills folder at /skills/custom. Use either
+                        configMapRef (keys as paths e.g. "my-skill/SKILL.md") or
+                        persistentVolumeClaim (full directory from a PVC). PVC takes precedence if both set.
+                      properties:
+                        configMapRef:
+                          type: object
+                          description: ConfigMap containing a full skills tree (keys = relative file paths).
+                          required: [name]
+                          properties:
+                            name:
+                              type: string
+                              description: ConfigMap name.
+                        persistentVolumeClaim:
+                          type: object
+                          description: If set, mount this PVC at /skills/custom (takes precedence over configMapRef).
+                          properties:
+                            claimName:
+                              type: string
+                              description: Name of the PersistentVolumeClaim in the same namespace.
                 mcpServers:
                   type: array
                   description: MCP servers to attach to the agent (toolsets).

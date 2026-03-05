@@ -21,7 +21,7 @@ spec:
   #   systemPrompt: "You are a helpful assistant."
   # skills:
   #   builtinSkills: []              # omit to include all; [] disables all; or list names
-  #   custom:
+  #   items:
   #     - name: my-skill             # inline skill content
   #       content: |
   #         ---
@@ -34,6 +34,12 @@ spec:
   #       configMapRef:
   #         name: my-skill-cm
   #         key: SKILL.md            # optional, defaults to SKILL.md
+  #   customFolder:
+  #     configMapRef:
+  #       name: my-skills-folder     # ConfigMap keys = paths e.g. "skill/SKILL.md", "skill/code/tool.py"
+  #     # OR mount a PVC (takes precedence if both set):
+  #     # persistentVolumeClaim:
+  #     #   claimName: agent-skills-pvc
   # mcpServers:
   #   - url: https://your-mcp.example.com
   #     type: streamable_http

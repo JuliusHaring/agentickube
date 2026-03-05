@@ -233,7 +233,7 @@ def _skills_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
 def _ensure_skills_configmap(name: str, namespace: str, spec: dict, body: dict) -> bool:
     """Create/update a ConfigMap for inline custom skills. Returns True if ConfigMap exists."""
     skills = spec.get("skills") or {}
-    custom = skills.get("custom") or []
+    custom = skills.get("items") or []
     inline_skills = {
         s["name"]: s["content"] for s in custom if s.get("content") and s.get("name")
     }
@@ -277,10 +277,28 @@ def _delete_skills_configmap(name: str, namespace: str) -> None:
 def _skills_volumes_and_mounts(
     agent_name: str, spec: dict, has_inline_cm: bool
 ) -> tuple[list[client.V1Volume], list[client.V1VolumeMount]]:
-    """Build volumes and mounts for custom skills (inline ConfigMap + configMapRef skills)."""
+    """Build volumes and mounts for custom skills (inline + items + customFolder ConfigMap or PVC)."""
     skills = spec.get("skills") or {}
-    custom = skills.get("custom") or []
+    custom = skills.get("items") or []
+    folder = skills.get("customFolder") or {}
 
+    # customFolder.persistentVolumeClaim: mount PVC at /skills/custom (no projected merge).
+    pvc = folder.get("persistentVolumeClaim") or {}
+    claim_name = (pvc.get("claimName") or "").strip()
+    if claim_name:
+        volume = client.V1Volume(
+            name=CUSTOM_SKILLS_VOLUME_NAME,
+            persistent_volume_claim=client.V1PersistentVolumeClaimVolumeSource(
+                claim_name=claim_name
+            ),
+        )
+        mount = client.V1VolumeMount(
+            name=CUSTOM_SKILLS_VOLUME_NAME,
+            mount_path=DEFAULT_CUSTOM_SKILLS_PATH,
+        )
+        return [volume], [mount]
+
+    # Projected volume: inline ConfigMap + customFolder.configMapRef + items (configMapRef).
     sources: list[client.V1VolumeProjection] = []
 
     if has_inline_cm:
@@ -289,6 +307,14 @@ def _skills_volumes_and_mounts(
                 config_map=client.V1ConfigMapProjection(
                     name=_skills_configmap_name(agent_name),
                 )
+            )
+        )
+
+    cm_ref = folder.get("configMapRef") or {}
+    if cm_ref.get("name"):
+        sources.append(
+            client.V1VolumeProjection(
+                config_map=client.V1ConfigMapProjection(name=cm_ref["name"])
             )
         )
 
