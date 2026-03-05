@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v1.11.0 (2026-03-05)
+
+### Features
+
+- Add job and cronjob triggers
+  ([`96fceda`](https://github.com/JuliusHaring/agentickube/commit/96fceda2b1611b3bba0a5b42ab0988b20d34f37f))
+
+### Refactoring
+
+- Factor out non-kopf related functions from main.py in operator
+  ([`6bcf04a`](https://github.com/JuliusHaring/agentickube/commit/6bcf04a46efd0d2ce7630e9498438738f1ebd91b))
+
+- Move otel config into otel module
+  ([`b3c71a8`](https://github.com/JuliusHaring/agentickube/commit/b3c71a882dc83cb43a4451383cda098a9eff9771))
+
+
 ## v1.10.0 (2026-03-05)
 
 ### Features
