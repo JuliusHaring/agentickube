@@ -20,12 +20,18 @@ jobs:
       released: ${{ steps.version.outputs.released }}
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
+      commit_sha: ${{ steps.meta.outputs.commit_sha }}
 
     steps:
       - name: Checkout repository
+        id: checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
+
+      - name: Set commit SHA output
+        id: meta
+        run: echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Pin to workflow commit
         run: git reset --hard ${{ github.sha }}
