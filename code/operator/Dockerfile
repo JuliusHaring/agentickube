@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 # Copy operator source
 COPY code/operator /code/operator
 COPY code/shared /code/shared
+RUN chmod +x /code/operator/entrypoint.sh
 
-# Run the Kopf operator in-cluster
-CMD ["kopf", "run", "--standalone", "--all-namespaces", "operator/main.py"]
+# WATCH_NAMESPACE: set to a namespace name to watch only that namespace; unset = all-namespaces.
+ENTRYPOINT ["/code/operator/entrypoint.sh"]
+CMD []
