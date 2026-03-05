@@ -1,0 +1,335 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: agents.ai.juliusharing.com
+spec:
+  group: ai.juliusharing.com
+  scope: Namespaced
+  names:
+    plural: agents
+    singular: agent
+    kind: Agent
+    shortNames:
+    - ag
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        description: Agent custom resource (ai.juliusharing.com).
+        properties:
+          spec:
+            properties:
+              image:
+                type: string
+                nullable: true
+              imagePullPolicy:
+                type: string
+                nullable: true
+              llm:
+                properties:
+                  provider:
+                    type: string
+                    nullable: true
+                  modelName:
+                    type: string
+                    nullable: true
+                  baseUrl:
+                    type: string
+                    nullable: true
+                  apiKey:
+                    properties:
+                      secretName:
+                        type: string
+                        nullable: true
+                      secretKey:
+                        type: string
+                        nullable: true
+                      raw:
+                        type: string
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              prompts:
+                properties:
+                  systemPrompt:
+                    type: string
+                    nullable: true
+                type: object
+                nullable: true
+              functions:
+                items:
+                  properties:
+                    name:
+                      type: string
+                  required:
+                  - name
+                  type: object
+                type: array
+                nullable: true
+              skills:
+                properties:
+                  builtinSkills:
+                    items:
+                      type: string
+                    type: array
+                    nullable: true
+                  items:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        content:
+                          type: string
+                          nullable: true
+                        configMapRef:
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              default: SKILL.md
+                              type: string
+                          required:
+                          - name
+                          type: object
+                          nullable: true
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    nullable: true
+                  bootstrap:
+                    properties:
+                      configMapRef:
+                        properties:
+                          name:
+                            type: string
+                          key:
+                            default: SKILL.md
+                            type: string
+                        required:
+                        - name
+                        type: object
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              mcpServers:
+                items:
+                  properties:
+                    url:
+                      type: string
+                    type:
+                      default: streamable_http
+                      type: string
+                  required:
+                  - url
+                  type: object
+                type: array
+                nullable: true
+              workspace:
+                properties:
+                  path:
+                    default: /workspace
+                    type: string
+                  persistentVolumeClaim:
+                    properties:
+                      claimName:
+                        type: string
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              conversation:
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  maxHistory:
+                    default: 20
+                    type: integer
+                type: object
+                nullable: true
+              resources:
+                properties:
+                  requests:
+                    additionalProperties:
+                      type: string
+                    type: object
+                    nullable: true
+                  limits:
+                    additionalProperties:
+                      type: string
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              securityContext:
+                properties:
+                  runAsUser:
+                    type: integer
+                    nullable: true
+                  runAsGroup:
+                    type: integer
+                    nullable: true
+                  runAsNonRoot:
+                    type: boolean
+                    nullable: true
+                  allowPrivilegeEscalation:
+                    type: boolean
+                    nullable: true
+                  readOnlyRootFilesystem:
+                    type: boolean
+                    nullable: true
+                  capabilities:
+                    properties:
+                      add:
+                        items:
+                          type: string
+                        type: array
+                        nullable: true
+                      drop:
+                        items:
+                          type: string
+                        type: array
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              podSecurityContext:
+                properties:
+                  runAsUser:
+                    type: integer
+                    nullable: true
+                  runAsGroup:
+                    type: integer
+                    nullable: true
+                  runAsNonRoot:
+                    type: boolean
+                    nullable: true
+                  fsGroup:
+                    type: integer
+                    nullable: true
+                  seccompProfile:
+                    properties:
+                      type:
+                        type: string
+                        nullable: true
+                      localhostProfile:
+                        type: string
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
+              nodeSelector:
+                additionalProperties:
+                  type: string
+                type: object
+                nullable: true
+              tolerations:
+                items:
+                  properties:
+                    key:
+                      type: string
+                      nullable: true
+                    operator:
+                      type: string
+                      nullable: true
+                    value:
+                      type: string
+                      nullable: true
+                    effect:
+                      type: string
+                      nullable: true
+                    tolerationSeconds:
+                      type: integer
+                      nullable: true
+                  type: object
+                type: array
+                nullable: true
+              serviceAccountName:
+                type: string
+                nullable: true
+              env:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                      nullable: true
+                    valueFrom:
+                      properties:
+                        secretKeyRef:
+                          properties:
+                            name:
+                              type: string
+                              nullable: true
+                            key:
+                              type: string
+                              nullable: true
+                          type: object
+                          nullable: true
+                        configMapKeyRef:
+                          properties:
+                            name:
+                              type: string
+                              nullable: true
+                            key:
+                              type: string
+                              nullable: true
+                          type: object
+                          nullable: true
+                      type: object
+                      nullable: true
+                  required:
+                  - name
+                  type: object
+                type: array
+                nullable: true
+              openTelemetry:
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  endpoint:
+                    type: string
+                    nullable: true
+                  serviceName:
+                    type: string
+                    nullable: true
+                  samplingRatio:
+                    type: number
+                    nullable: true
+                type: object
+                nullable: true
+              trigger:
+                properties:
+                  type:
+                    default: http
+                    type: string
+                  query:
+                    type: string
+                    nullable: true
+                  schedule:
+                    type: string
+                    nullable: true
+                  backoffLimit:
+                    default: 3
+                    type: integer
+                  ttlSecondsAfterFinished:
+                    type: integer
+                    nullable: true
+                type: object
+                nullable: true
+            type: object
+        required:
+        - spec

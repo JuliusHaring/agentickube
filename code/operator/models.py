@@ -171,6 +171,17 @@ class OpenTelemetryConfig(_Base):
     sampling_ratio: float | None = None
 
 
+# ── Trigger ──────────────────────────────────────────────────────────────────
+
+
+class TriggerConfig(_Base):
+    type: str = "http"
+    query: str | None = None
+    schedule: str | None = None
+    backoff_limit: int = 3
+    ttl_seconds_after_finished: int | None = None
+
+
 # ── Root ─────────────────────────────────────────────────────────────────────
 
 
@@ -192,3 +203,4 @@ class AgentSpec(_Base):
     service_account_name: str | None = None
     env: list[EnvVar] | None = None
     open_telemetry: OpenTelemetryConfig | None = None
+    trigger: TriggerConfig | None = None

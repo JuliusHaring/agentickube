@@ -1,6 +1,6 @@
 """
-Reconcile Agent spec into Kubernetes resources (Deployment, optional skills ConfigMap).
-Used by the Kopf handlers in main.py.
+Reconcile Agent spec into Kubernetes resources (Deployment, Job, CronJob,
+and optional skills ConfigMap).  Used by the Kopf handlers in main.py.
 """
 
 from __future__ import annotations
@@ -17,6 +17,7 @@ from models import (
     MCPServerConfig,
     OpenTelemetryConfig,
     SkillsConfig,
+    TriggerConfig,
     WorkspaceConfig,
 )
 
@@ -36,6 +37,14 @@ DEFAULT_PULL_POLICY = "IfNotPresent"
 
 
 def deployment_name(agent: str) -> str:
+    return f"{DEPLOYMENT_PREFIX}{agent}"
+
+
+def job_name(agent: str) -> str:
+    return f"{DEPLOYMENT_PREFIX}{agent}"
+
+
+def cronjob_name(agent: str) -> str:
     return f"{DEPLOYMENT_PREFIX}{agent}"
 
 
@@ -375,7 +384,61 @@ def _delete_skills_cm(agent_name: str, namespace: str) -> None:
             raise
 
 
-# ── Deployment builder ───────────────────────────────────────────────────────
+# ── Shared pod template builder ──────────────────────────────────────────────
+
+CLI_COMMAND = ["python", "app/cli.py"]
+
+
+def _build_pod_template_spec(
+    name: str,
+    spec: AgentSpec,
+    has_inline_cm: bool,
+    *,
+    command: list[str] | None = None,
+    extra_env: list[client.V1EnvVar] | None = None,
+    restart_policy: str | None = None,
+) -> client.V1PodTemplateSpec:
+    """Build a PodTemplateSpec shared by Deployment, Job, and CronJob."""
+    workspace = spec.workspace or WorkspaceConfig()
+    ws_path, ws_vol = _workspace_volume(workspace)
+    sk_vols, sk_mounts = _skills_volumes(name, spec, has_inline_cm)
+
+    env = _build_env_vars(spec, name, has_inline_cm)
+    if extra_env:
+        env = [*env, *extra_env]
+
+    ports = None if command else [client.V1ContainerPort(container_port=80)]
+
+    container = client.V1Container(
+        name="agent",
+        image=(spec.image or "").strip() or DEFAULT_IMAGE,
+        image_pull_policy=(spec.image_pull_policy or "").strip() or DEFAULT_PULL_POLICY,
+        command=command,
+        env=env,
+        ports=ports,
+        volume_mounts=[
+            client.V1VolumeMount(name=WORKSPACE_VOL, mount_path=ws_path),
+            *sk_mounts,
+        ],
+        resources=_build_resources(spec),
+        security_context=_build_container_sc(spec),
+    )
+
+    return client.V1PodTemplateSpec(
+        metadata=client.V1ObjectMeta(labels={"agent": name}),
+        spec=client.V1PodSpec(
+            containers=[container],
+            volumes=[ws_vol, *sk_vols],
+            restart_policy=restart_policy,
+            security_context=_build_pod_sc(spec),
+            node_selector=spec.node_selector,
+            tolerations=_build_tolerations(spec),
+            service_account_name=(spec.service_account_name or "").strip() or None,
+        ),
+    )
+
+
+# ── Resource builders ────────────────────────────────────────────────────────
 
 
 def build_deployment(
@@ -385,23 +448,7 @@ def build_deployment(
     body: dict,
     has_inline_cm: bool,
 ) -> client.V1Deployment:
-    workspace = spec.workspace or WorkspaceConfig()
-    ws_path, ws_vol = _workspace_volume(workspace)
-    sk_vols, sk_mounts = _skills_volumes(name, spec, has_inline_cm)
-
-    container = client.V1Container(
-        name="agent",
-        image=(spec.image or "").strip() or DEFAULT_IMAGE,
-        image_pull_policy=(spec.image_pull_policy or "").strip() or DEFAULT_PULL_POLICY,
-        env=_build_env_vars(spec, name, has_inline_cm),
-        ports=[client.V1ContainerPort(container_port=80)],
-        volume_mounts=[
-            client.V1VolumeMount(name=WORKSPACE_VOL, mount_path=ws_path),
-            *sk_mounts,
-        ],
-        resources=_build_resources(spec),
-        security_context=_build_container_sc(spec),
-    )
+    template = _build_pod_template_spec(name, spec, has_inline_cm)
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
@@ -412,20 +459,88 @@ def build_deployment(
         spec=client.V1DeploymentSpec(
             replicas=1,
             selector=client.V1LabelSelector(match_labels={"agent": name}),
-            template=client.V1PodTemplateSpec(
-                metadata=client.V1ObjectMeta(labels={"agent": name}),
-                spec=client.V1PodSpec(
-                    containers=[container],
-                    volumes=[ws_vol, *sk_vols],
-                    security_context=_build_pod_sc(spec),
-                    node_selector=spec.node_selector,
-                    tolerations=_build_tolerations(spec),
-                    service_account_name=(spec.service_account_name or "").strip()
-                    or None,
-                ),
-            ),
+            template=template,
         ),
     )
     kopf.append_owner_reference(deployment, body)
     kopf.label(deployment, nested="spec.template")
     return deployment
+
+
+def _trigger_env(trigger: TriggerConfig) -> list[client.V1EnvVar]:
+    env: list[client.V1EnvVar] = []
+    if trigger.query:
+        env.append(client.V1EnvVar(name="AGENT_QUERY", value=trigger.query))
+    return env
+
+
+def build_job(
+    name: str,
+    namespace: str,
+    spec: AgentSpec,
+    body: dict,
+    has_inline_cm: bool,
+) -> client.V1Job:
+    trigger = spec.trigger or TriggerConfig()
+    template = _build_pod_template_spec(
+        name,
+        spec,
+        has_inline_cm,
+        command=CLI_COMMAND,
+        extra_env=_trigger_env(trigger),
+        restart_policy="Never",
+    )
+
+    job = client.V1Job(
+        metadata=client.V1ObjectMeta(
+            name=job_name(name),
+            namespace=namespace,
+            labels={"app.kubernetes.io/name": "agent", "agent": name},
+        ),
+        spec=client.V1JobSpec(
+            template=template,
+            backoff_limit=trigger.backoff_limit,
+            ttl_seconds_after_finished=trigger.ttl_seconds_after_finished,
+        ),
+    )
+    kopf.append_owner_reference(job, body)
+    return job
+
+
+def build_cronjob(
+    name: str,
+    namespace: str,
+    spec: AgentSpec,
+    body: dict,
+    has_inline_cm: bool,
+) -> client.V1CronJob:
+    trigger = spec.trigger or TriggerConfig()
+    template = _build_pod_template_spec(
+        name,
+        spec,
+        has_inline_cm,
+        command=CLI_COMMAND,
+        extra_env=_trigger_env(trigger),
+        restart_policy="Never",
+    )
+
+    cronjob = client.V1CronJob(
+        metadata=client.V1ObjectMeta(
+            name=cronjob_name(name),
+            namespace=namespace,
+            labels={"app.kubernetes.io/name": "agent", "agent": name},
+        ),
+        spec=client.V1CronJobSpec(
+            schedule=trigger.schedule or "0 * * * *",
+            concurrency_policy="Forbid",
+            job_template=client.V1JobTemplateSpec(
+                spec=client.V1JobSpec(
+                    template=template,
+                    backoff_limit=trigger.backoff_limit,
+                    ttl_seconds_after_finished=trigger.ttl_seconds_after_finished,
+                ),
+            ),
+        ),
+    )
+    kopf.append_owner_reference(cronjob, body)
+    return cronjob

@@ -24,6 +24,7 @@ from models import (  # noqa: E402
     OpenTelemetryConfig,
     PromptsConfig,
     PVCConfig,
+    TriggerConfig,
     WorkspaceConfig,
 )
 
@@ -81,6 +82,31 @@ def _dev_spec() -> AgentSpec:
             endpoint="http://otel-collector:4318",
             service_name="my-agent",
             sampling_ratio=1.0,
+        ),
+    )
+
+
+def _job_spec() -> AgentSpec:
+    """Example one-time Job trigger."""
+    return AgentSpec(
+        llm=LLMConfig(model_name="", base_url=""),
+        trigger=TriggerConfig(
+            type="job",
+            query="Summarize all pods in the cluster",
+            backoff_limit=2,
+            ttl_seconds_after_finished=300,
+        ),
+    )
+
+
+def _cron_spec() -> AgentSpec:
+    """Example CronJob trigger."""
+    return AgentSpec(
+        llm=LLMConfig(model_name="", base_url=""),
+        trigger=TriggerConfig(
+            type="cron",
+            query="Check cluster health and report anomalies",
+            schedule="0 */6 * * *",
         ),
     )
 
@@ -146,17 +172,26 @@ def main() -> int:
         print("PyYAML required: pip install pyyaml", file=sys.stderr)
         return 1
 
-    example_yaml = _agent_cr_yaml(
-        "example",
-        _example_spec(),
-        comment="Generated from code/operator/models.py - task operator:generate-examples",
+    gen_comment = (
+        "Generated from code/operator/models.py - task operator:generate-examples"
     )
+
+    example_yaml = _agent_cr_yaml("example", _example_spec(), comment=gen_comment)
+    job_yaml = _agent_cr_yaml("example-job", _job_spec(), comment=gen_comment)
+    cron_yaml = _agent_cr_yaml("example-cron", _cron_spec(), comment=gen_comment)
     dev_yaml = _agent_cr_yaml("my-agent", _dev_spec())
 
-    example_path = _repo_root / "deploy" / "example-agent.yaml"
-    example_path.parent.mkdir(parents=True, exist_ok=True)
-    example_path.write_text(example_yaml, encoding="utf-8")
-    print(f"Wrote {example_path}", file=sys.stderr)
+    deploy_dir = _repo_root / "deploy"
+    deploy_dir.mkdir(parents=True, exist_ok=True)
+
+    for fname, content in [
+        ("example-agent.yaml", example_yaml),
+        ("example-agent-job.yaml", job_yaml),
+        ("example-agent-cron.yaml", cron_yaml),
+    ]:
+        path = deploy_dir / fname
+        path.write_text(content, encoding="utf-8")
+        print(f"Wrote {path}", file=sys.stderr)
 
     manifests_agent_path = _repo_root / "manifests" / "agent.yaml"
     manifests_agent_path.parent.mkdir(parents=True, exist_ok=True)
