@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v1.4.1 (2026-03-05)
+
+### Bug Fixes
+
+- Fix rbac
+  ([`f1ddae2`](https://github.com/JuliusHaring/agentickube/commit/f1ddae21826e7394782eca8d92e883b519d9e753))
+
+### Chores
+
+- Update rbac
+  ([`2d798bd`](https://github.com/JuliusHaring/agentickube/commit/2d798bda9bcf65115bcbbf234c9de7b044d5eba5))
+
+
 ## v1.4.0 (2026-03-05)
 
 ### Continuous Integration
