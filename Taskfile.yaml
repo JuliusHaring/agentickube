@@ -9,9 +9,9 @@ includes:
 
 tasks:
   default:
-   - task: deploy-all
+   - task: deploy
 
-  deploy-local:
+  deploy:
     - task: dev:all
     - task: docker:build-all
     - task: k8s:create-ns
@@ -20,7 +20,4 @@ tasks:
     - task: k8s:apply-crd
     - task: k8s:apply-rbac
     - task: k8s:apply-manifests
-
-  deploy-all:
-    - task: deploy-local
     - task: k8s:apply-operator

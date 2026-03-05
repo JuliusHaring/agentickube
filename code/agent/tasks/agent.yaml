@@ -1,6 +1,6 @@
 version: '3'
 
 tasks:
-  run: PYTHONPATH="code:code/agent/src" WORKSPACE_DIR="./code/agent/workspace" SKILLS_BUILTIN_DIR="./code/agent/skills/builtin" LLM_MODEL_NAME="qwen3:1.7b" LLM_BASE_URL="http://localhost:11434/v1" OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_SERVICE_NAME=agent-local python code/agent/src/main.py {{.CLI_ARGS}}
+  run: PYTHONPATH="code:code/agent/src" WORKSPACE_DIR="./code/agent/workspace" SKILLS_BUILTIN_DIR="./code/agent/skills/builtin" LLM_MODEL_NAME="qwen3:1.7b" LLM_BASE_URL="http://localhost:11434/v1" OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318 OTEL_SERVICE_NAME=agent-local RELOAD=true python code/agent/src/main.py {{.CLI_ARGS}}
 
-  run-bare: PYTHONPATH="code:code/agent/src" WORKSPACE_DIR="./code/agent/workspace" SKILLS_BUILTIN_DIR="./code/agent/skills/builtin" python code/agent/src/main.py {{.CLI_ARGS}}
+  run-bare: PYTHONPATH="code:code/agent/src" WORKSPACE_DIR="./code/agent/workspace" SKILLS_BUILTIN_DIR="./code/agent/skills/builtin" RELOAD=true python code/agent/src/main.py {{.CLI_ARGS}}

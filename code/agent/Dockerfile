@@ -16,6 +16,6 @@ COPY code/agent/workspace /code/app/workspace
 
 RUN rm /code/app/workspace/.gitignore
 
-ENV PYTHONPATH=/code
+ENV PYTHONPATH=/code:/code/app
 
-CMD ["fastapi", "run", "app/main.py", "--port", "80"]
+CMD ["gunicorn", "app.main:app", "-k", "uvicorn.workers.UvicornWorker", "-b", "0.0.0.0:80", "--workers", "1"]
