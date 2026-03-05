@@ -9,3 +9,4 @@ opentelemetry-sdk>=1.28.0
 opentelemetry-exporter-otlp-proto-http>=1.28.0
 opentelemetry-instrumentation-fastapi>=0.49b0
 logfire>=0.54.0
+colorlog>=6.10.1
