@@ -28,10 +28,18 @@ tasks:
 
   apply-rbac: kubectl apply -f deploy/example-rbac.yaml
 
-  apply-folder: kubectl apply -f manifests/
+  apply-ollama: kubectl apply -f manifests/ollama.yaml
+
+  apply-otel: kubectl apply -f manifests/otel.yaml
+
+  apply-agent: kubectl apply -f manifests/agent.yaml
+
+  apply-manifests:
+    - task: apply-ollama
+    - task: apply-otel
+    - task: apply-agent
 
   apply-all:
     - task: apply-crd
     - task: apply-operator
-    - task: apply-rbac
-    - task: apply-folder
+    - task: apply-manifests

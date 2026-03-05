@@ -1,6 +1,6 @@
 from pydantic_ai import FunctionToolset
 from pydantic_ai.mcp import MCPServerSSE, MCPServerStreamableHTTP
-from agent.src.config import llm_config
+from config import llm_config
 
 
 def mcp_toolset() -> list:

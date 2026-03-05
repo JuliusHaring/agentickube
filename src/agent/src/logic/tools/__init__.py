@@ -1,6 +1,6 @@
 """Pydantic-ai tools (workspace file I/O and future tool modules)."""
 
-from agent.src.logic.tools.mcp import mcp_toolset
+from logic.tools.mcp import mcp_toolset
 from logic.tools.workspace import workspace_toolset
 from config import llm_config
 
