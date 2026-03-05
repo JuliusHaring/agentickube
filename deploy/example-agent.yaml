@@ -1,0 +1,9 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: example
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''

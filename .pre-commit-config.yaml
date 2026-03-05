@@ -7,3 +7,11 @@ repos:
         entry: task dev:all
         language: system
         pass_filenames: false
+
+  - repo: local
+    hooks:
+      - id: task-operator-generate
+        name: task generate
+        entry: task operator:generate
+        language: system
+        pass_filenames: false

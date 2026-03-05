@@ -1,0 +1,14 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: example-cron
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''
+  trigger:
+    type: cron
+    query: Check cluster health and report anomalies
+    schedule: 0 */6 * * *
+    backoffLimit: 3

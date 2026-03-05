@@ -1,0 +1,14 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: example-job
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''
+  trigger:
+    type: job
+    query: Summarize all pods in the cluster
+    backoffLimit: 2
+    ttlSecondsAfterFinished: 300

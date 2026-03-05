@@ -1,0 +1,74 @@
+apiVersion: ai.juliusharing.com/v1
+kind: Agent
+metadata:
+  name: my-agent
+spec:
+  image: agentickube-agent:latest
+  imagePullPolicy: Never
+  llm:
+    modelName: qwen3:1.7b
+    baseUrl: http://ollama:11434/v1
+  prompts:
+    systemPrompt: test
+  mcpServers:
+  - url: https://knowledge-mcp.global.api.aws
+    type: streamable_http
+  workspace:
+    path: /workspace
+    persistentVolumeClaim:
+      claimName: agent-workspace-pvc
+  openTelemetry:
+    enabled: true
+    endpoint: http://otel-collector:4318
+    serviceName: my-agent
+    samplingRatio: 1.0
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: agent-workspace-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agent-workspace-init
+spec:
+  ttlSecondsAfterFinished: 300
+  backoffLimit: 2
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: init
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              mkdir -p /workspace
+              cat > /workspace/ws.txt << 'EOF'
+              To be, or not to be, that is the question:
+              Whether 'tis nobler in the mind to suffer
+              The slings and arrows of outrageous fortune,
+              Or to take arms against a sea of troubles
+              And by opposing end them.
+              — Shakespeare, Hamlet
+              EOF
+              cat > /workspace/eh.txt << 'EOF'
+              In the late summer of that year we lived in a house in a village that looked across the river and the plain to the mountains.
+              — Hemingway, A Farewell to Arms
+              EOF
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: agent-workspace-pvc
