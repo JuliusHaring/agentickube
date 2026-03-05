@@ -20,18 +20,12 @@ jobs:
       released: ${{ steps.version.outputs.released }}
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
-      commit_sha: ${{ steps.meta.outputs.commit_sha }}
 
     steps:
       - name: Checkout repository
-        id: checkout
         uses: actions/checkout@v4
         with:
           ref: ${{ github.ref_name }}
-
-      - name: Set commit SHA output
-        id: meta
-        run: echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
 
       - name: Pin to workflow commit
         run: git reset --hard ${{ github.sha }}
@@ -49,7 +43,7 @@ jobs:
           pip install python-semantic-release
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          if semantic-release version --no-tag --no-push; then
+          if GITHUB_OUTPUT="" semantic-release version --no-tag --no-push; then
             echo "released=true" >> $GITHUB_OUTPUT
             v=$(sed -n 's/^version=//p' VERSION)
             echo "version=$v" >> $GITHUB_OUTPUT
@@ -179,7 +173,7 @@ jobs:
           pip install python-semantic-release
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          semantic-release version --no-tag --no-push
+          GITHUB_OUTPUT="" semantic-release version --no-tag --no-push
           git push origin ${{ github.ref_name }}
 
       - name: Download release notes
