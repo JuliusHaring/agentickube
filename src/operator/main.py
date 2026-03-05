@@ -132,14 +132,155 @@ def _image_pull_policy_from_spec(spec: dict) -> str:
     return (spec.get("imagePullPolicy") or "").strip() or AGENT_IMAGE_PULL_POLICY
 
 
+def _resources_from_spec(spec: dict) -> client.V1ResourceRequirements | None:
+    """Build container resources from spec.resources (requests/limits)."""
+    r = spec.get("resources") or {}
+    if not r:
+        return None
+    requests = r.get("requests") or {}
+    limits = r.get("limits") or {}
+    if not requests and not limits:
+        return None
+    return client.V1ResourceRequirements(requests=requests, limits=limits)
+
+
+def _container_security_context_from_spec(
+    spec: dict,
+) -> client.V1SecurityContext | None:
+    """Build container security context from spec.securityContext."""
+    sc = spec.get("securityContext") or {}
+    if not sc:
+        return None
+    caps = sc.get("capabilities") or {}
+    add = caps.get("add")
+    drop = caps.get("drop")
+    capabilities = None
+    if add is not None or drop is not None:
+        capabilities = client.V1SecurityCapabilities(add=add or [], drop=drop or [])
+    return client.V1SecurityContext(
+        run_as_user=sc.get("runAsUser"),
+        run_as_group=sc.get("runAsGroup"),
+        run_as_non_root=sc.get("runAsNonRoot"),
+        allow_privilege_escalation=sc.get("allowPrivilegeEscalation"),
+        read_only_root_filesystem=sc.get("readOnlyRootFilesystem"),
+        capabilities=capabilities,
+    )
+
+
+def _pod_security_context_from_spec(spec: dict) -> client.V1PodSecurityContext | None:
+    """Build pod security context from spec.podSecurityContext."""
+    psc = spec.get("podSecurityContext") or {}
+    if not psc:
+        return None
+    seccomp = psc.get("seccompProfile") or {}
+    seccomp_profile = None
+    if seccomp:
+        seccomp_profile = client.V1SeccompProfile(
+            type=seccomp.get("type"),
+            localhost_profile=seccomp.get("localhostProfile"),
+        )
+    return client.V1PodSecurityContext(
+        run_as_user=psc.get("runAsUser"),
+        run_as_group=psc.get("runAsGroup"),
+        run_as_non_root=psc.get("runAsNonRoot"),
+        fs_group=psc.get("fsGroup"),
+        seccomp_profile=seccomp_profile,
+    )
+
+
+def _tolerations_from_spec(spec: dict) -> list[client.V1Toleration] | None:
+    """Build tolerations from spec.tolerations."""
+    items = spec.get("tolerations")
+    if not items:
+        return None
+    out = []
+    for t in items:
+        out.append(
+            client.V1Toleration(
+                key=t.get("key"),
+                operator=t.get("operator"),
+                value=t.get("value"),
+                effect=t.get("effect"),
+                toleration_seconds=t.get("tolerationSeconds"),
+            )
+        )
+    return out
+
+
+def _extra_env_from_spec(spec: dict) -> list[client.V1EnvVar]:
+    """Build extra env vars from spec.env (name/value or valueFrom)."""
+    env_spec = spec.get("env") or []
+    out = []
+    for e in env_spec:
+        name = (e.get("name") or "").strip()
+        if not name:
+            continue
+        value = e.get("value")
+        value_from = e.get("valueFrom")
+        if value_from:
+            secret_ref = value_from.get("secretKeyRef")
+            cm_ref = value_from.get("configMapKeyRef")
+            src = None
+            if secret_ref:
+                src = client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name=secret_ref.get("name"),
+                        key=secret_ref.get("key"),
+                    )
+                )
+            elif cm_ref:
+                src = client.V1EnvVarSource(
+                    config_map_key_ref=client.V1ConfigMapKeySelector(
+                        name=cm_ref.get("name"),
+                        key=cm_ref.get("key"),
+                    )
+                )
+            if src:
+                out.append(client.V1EnvVar(name=name, value_from=src))
+        elif value is not None:
+            out.append(client.V1EnvVar(name=name, value=str(value)))
+    return out
+
+
 def _make_deployment(
     name: str, namespace: str, spec: dict, body: dict
 ) -> client.V1Deployment:
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec, agent_name=name)
+    env_vars = _env_from_spec(spec, agent_name=name) + _extra_env_from_spec(spec)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
     image = _image_from_spec(spec)
     image_pull_policy = _image_pull_policy_from_spec(spec)
+    resources = _resources_from_spec(spec)
+    container_security_context = _container_security_context_from_spec(spec)
+    pod_security_context = _pod_security_context_from_spec(spec)
+    node_selector = spec.get("nodeSelector")
+    tolerations = _tolerations_from_spec(spec)
+    service_account = (spec.get("serviceAccountName") or "").strip() or None
+
+    container = client.V1Container(
+        name="agent",
+        image=image,
+        env=env_vars,
+        image_pull_policy=image_pull_policy,
+        ports=[client.V1ContainerPort(container_port=80)],
+        volume_mounts=[
+            client.V1VolumeMount(
+                name=WORKSPACE_VOLUME_NAME,
+                mount_path=workspace_path,
+            )
+        ],
+        resources=resources,
+        security_context=container_security_context,
+    )
+
+    pod_spec = client.V1PodSpec(
+        volumes=[workspace_volume],
+        containers=[container],
+        security_context=pod_security_context,
+        node_selector=node_selector,
+        tolerations=tolerations,
+        service_account_name=service_account,
+    )
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
@@ -152,24 +293,7 @@ def _make_deployment(
             selector=client.V1LabelSelector(match_labels={"agent": name}),
             template=client.V1PodTemplateSpec(
                 metadata=client.V1ObjectMeta(labels={"agent": name}),
-                spec=client.V1PodSpec(
-                    volumes=[workspace_volume],
-                    containers=[
-                        client.V1Container(
-                            name="agent",
-                            image=image,
-                            env=env_vars,
-                            image_pull_policy=image_pull_policy,
-                            ports=[client.V1ContainerPort(container_port=80)],
-                            volume_mounts=[
-                                client.V1VolumeMount(
-                                    name=WORKSPACE_VOLUME_NAME,
-                                    mount_path=workspace_path,
-                                )
-                            ],
-                        )
-                    ],
-                ),
+                spec=pod_spec,
             ),
         ),
     )
@@ -194,19 +318,32 @@ def update_agent(
     spec: dict, name: str, namespace: str, logger: kopf.Logger, **_
 ) -> None:
     deployment_name = _deployment_name(name)
-    env_vars = _env_from_spec(spec, agent_name=name)
+    env_vars = _env_from_spec(spec, agent_name=name) + _extra_env_from_spec(spec)
     workspace_path, workspace_volume = _workspace_from_spec(spec)
     image = _image_from_spec(spec)
     image_pull_policy = _image_pull_policy_from_spec(spec)
     apps = client.AppsV1Api()
     deployment = apps.read_namespaced_deployment(deployment_name, namespace)
-    deployment.spec.template.spec.volumes = [workspace_volume]
-    deployment.spec.template.spec.containers[0].image = image
-    deployment.spec.template.spec.containers[0].image_pull_policy = image_pull_policy
-    deployment.spec.template.spec.containers[0].env = env_vars
-    deployment.spec.template.spec.containers[0].volume_mounts = [
+
+    pod_spec = deployment.spec.template.spec
+    pod_spec.volumes = [workspace_volume]
+    pod_spec.security_context = _pod_security_context_from_spec(spec)
+    pod_spec.node_selector = spec.get("nodeSelector")
+    pod_spec.tolerations = _tolerations_from_spec(spec)
+    pod_spec.service_account_name = (
+        spec.get("serviceAccountName") or ""
+    ).strip() or None
+
+    container = deployment.spec.template.spec.containers[0]
+    container.image = image
+    container.image_pull_policy = image_pull_policy
+    container.env = env_vars
+    container.volume_mounts = [
         client.V1VolumeMount(name=WORKSPACE_VOLUME_NAME, mount_path=workspace_path)
     ]
+    container.resources = _resources_from_spec(spec)
+    container.security_context = _container_security_context_from_spec(spec)
+
     apps.patch_namespaced_deployment(deployment_name, namespace, deployment)
     logger.info("Deployment updated: %s", deployment_name)
 
