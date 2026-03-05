@@ -99,7 +99,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/agent:${{ needs.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}/agent:latest
-          cache-from: type=gha
+          cache-from: type=gha,scope=agent
           cache-to: type=gha,mode=max,scope=agent
 
   build-operator:
@@ -143,7 +143,7 @@ jobs:
           tags: |
             ${{ env.IMAGE_PREFIX }}/operator:${{ needs.version.outputs.version }}
             ${{ env.IMAGE_PREFIX }}/operator:latest
-          cache-from: type=gha
+          cache-from: type=gha,scope=operator
           cache-to: type=gha,mode=max,scope=operator
 
   publish-release:
