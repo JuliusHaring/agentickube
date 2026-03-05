@@ -1,9 +1,19 @@
-# AgenticKube
-
 [![CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
 [![CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
 
-**AgenticKube** is a Kubernetes operator that runs LLM-powered agents as first-class resources. You define an `Agent` custom resource (model, API, MCP servers, workspace, optional OpenTelemetry); the operator reconciles it into a Deployment that serves the agent workload.
+# AgenticKube
+
+**🤖 Agents in Kubernetes — declarative, yours, no lock-in.**
+
+Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Your models, your cluster.
+
+| | |
+|---|---|
+| 🧩 | **One resource** — one `Agent` = one workload (HTTP, one-off Job, or Cron) |
+| 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
+| 🔧 | **MCP + SKILLS.md** — [tools & knowledge](https://modelcontextprotocol.io/) |
+| 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
+| 📦 | **Zip → apply** — CRD + operator + example, then you’re live |
 
 ## Installation
 
