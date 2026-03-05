@@ -20,5 +20,6 @@ spec:
       serviceAccountName: agent-operator
       containers:
         - name: operator
-          image: ghcr.io/juliusharing/agentickube/operator:latest
-          imagePullPolicy: Always
+          # Use local image when running deploy-all (docker:build-all); for released installs use ghcr.io/juliusharing/agentickube/operator:latest
+          image: agentickube-operator:latest
+          imagePullPolicy: IfNotPresent
