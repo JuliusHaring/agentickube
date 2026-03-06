@@ -115,6 +115,15 @@ def _skills_env(
     return env
 
 
+def _prompts_env(spec: AgentSpec) -> list[client.V1EnvVar]:
+    """Inject spec.prompts.system_prompt as SYSTEM_PROMPT so the agent uses it."""
+    if not spec.prompts or not spec.prompts.system_prompt:
+        return []
+    return [
+        client.V1EnvVar(name="SYSTEM_PROMPT", value=spec.prompts.system_prompt.strip())
+    ]
+
+
 def _build_agent_env(
     spec: AgentSpec, name: str, has_inline_cm: bool
 ) -> list[client.V1EnvVar]:
@@ -127,6 +136,7 @@ def _build_agent_env(
         *_conversation_env(spec.conversation),
         *otel_env(spec.open_telemetry, name),
         *_skills_env(spec.skills, has_inline_cm),
+        *_prompts_env(spec),
         *extra_env(spec.env or []),
     ]
     return env

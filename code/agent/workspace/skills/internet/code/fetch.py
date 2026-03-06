@@ -12,11 +12,12 @@ MAX_CHARS_PER_URL = 15000
 
 def _fetch_one(
     url: str,
-    user_agent: str,
+    user_agent: str | None,
     timeout: float = 30.0,
 ) -> tuple[str, str]:
     """Fetch a single URL. Returns (url, content_or_error)."""
-    headers = {"User-Agent": user_agent}
+    ua = (user_agent or DEFAULT_USER_AGENT).strip()
+    headers = {"User-Agent": ua}
     try:
         with httpx.Client(follow_redirects=True, timeout=timeout) as client:
             r = client.get(url, headers=headers)
