@@ -1,18 +1,7 @@
 from pydantic_ai import Agent
-from pydantic_ai.messages import (
-    ModelMessage,
-    ModelRequest,
-    ModelResponse,
-    TextPart,
-    UserPromptPart,
-)
 
-from logic.sessions import (
-    HistoryMessage,
-    load_history,
-    save_history,
-    extract_steps_from_run,
-)
+from logic.history import get_history, history_to_model_messages, record_turn
+from logic.sessions import extract_steps_from_run
 from config import agent_config
 from logic.providers import get_model
 from logic.prompt import instructions, skills_prompt
@@ -38,23 +27,15 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         session_id,
         len(query) > 80 and query[:80] + "... [truncated]" or query,
     )
-    history: list[HistoryMessage] = load_history(session_id) if use_memory else []
+    history = get_history(session_id, use_memory)
 
     try:
         skills = skills_prompt()
         logger.info(f"Skills: {skills}")
 
-        # Build message history for the model. ModelMessage is ModelRequest | ModelResponse, not a constructor.
-        def _to_model_message(m: HistoryMessage) -> ModelMessage:
-            if m.role == "user":
-                return ModelRequest(parts=[UserPromptPart(m.content)])
-            return ModelResponse(parts=[TextPart(content=m.content)])
-
-        message_history: list[ModelMessage] = [_to_model_message(m) for m in history]
+        message_history = history_to_model_messages(history)
         user_content_parts = [p for p in [skills, query] if p]
         user_prompt = "\n\n".join(user_content_parts)
-
-        logger.info(f"History: {message_history}")
 
         res = _build_agent().run_sync(
             user_prompt=user_prompt,
@@ -62,20 +43,23 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         )
         output = res.output
 
-        if use_memory:
-            history.append(HistoryMessage(role="user", content=query))
+        if use_memory and session_id:
             steps = extract_steps_from_run(res)
-            history.append(
-                HistoryMessage(
-                    role="assistant", content=output, steps=steps if steps else None
-                )
+            try:
+                new_messages = list(res.new_messages())
+            except Exception:
+                new_messages = None
+            record_turn(
+                session_id,
+                history,
+                query,
+                output,
+                steps if steps else None,
+                max(1, agent_config.conversation_max_history),
+                new_messages=new_messages,
             )
-            max_n = max(1, agent_config.conversation_max_history)
-            if len(history) > max_n:
-                history = history[-max_n:]
-            save_history(session_id, history)
 
         return output
     except Exception as e:
         logger.error("Agent run failed: %s", e)
-        return f"Agent error: {e}"
+        return "Agent error. Please try again."

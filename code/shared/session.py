@@ -14,6 +14,8 @@ class HistoryMessage(BaseModel):
     content: str
     steps: list[dict] | None = None
     """Optional intermediate steps for assistant turns."""
+    intermediate_messages: list[dict] | None = None
+    """Serialized model messages (request/response + tool calls) for this turn, when present."""
 
 
 def validate_session_id(session_id: str | None, *, memory_enabled: bool) -> str:
@@ -64,7 +66,7 @@ def save_history(base_dir: str, session_id: str, history: list[HistoryMessage]) 
     path = session_path(base_dir, session_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
-        json.dumps([m.model_dump() for m in history], indent=0),
+        json.dumps([m.model_dump() for m in history], indent=0, default=str),
         encoding="utf-8",
     )
 
