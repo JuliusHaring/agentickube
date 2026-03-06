@@ -1,6 +1,5 @@
-# Example values for local/dev: Ollama + OTEL + Jaeger + one Agent + one Orchestrator.
-# Usage: helm install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
-# Or:    helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
+# Example: agent team for stock analytics (Ollama + OTEL + Jaeger).
+# Usage: helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
 
 operator:
   image:
@@ -36,16 +35,19 @@ workspacePvc:
   size: 1Gi
 
 agents:
-  - name: my-agent
+  - name: stock-fetcher
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      description: General-purpose development agent
+      description: Fetches stock data (e.g. Yahoo). Creates and uses a fetch-stocks skill.
       llm:
         modelName: qwen3:1.7b
         baseUrl: http://ollama:11434/v1
       prompts:
-        systemPrompt: test
+        systemPrompt: |
+          You are a stock-data agent. Your job is to fetch and return stock data (prices, movers, etc.) when asked.
+          If you do not yet have a skill named "fetch-stocks" for querying Yahoo (or similar) stock data, create it first in your workspace (e.g. as a SKILL.md in workspace/skills/fetch-stocks/), then use it to answer. Prefer using a dedicated skill so results are consistent and reusable.
+          When asked for top movers, gainers, or losers, return structured data (e.g. symbol, change, percent) and cite the source.
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -56,26 +58,104 @@ agents:
       openTelemetry:
         enabled: true
         endpoint: http://otel-collector:4318
-        serviceName: my-agent
+        serviceName: stock-fetcher
+        samplingRatio: 1.0
+
+  - name: analyst-risk
+    spec:
+      image: agentickube-agent:latest
+      imagePullPolicy: IfNotPresent
+      description: Assesses risk (volatility, drawdown, concentration, tail risk).
+      llm:
+        modelName: qwen3:1.7b
+        baseUrl: http://ollama:11434/v1
+      prompts:
+        systemPrompt: |
+          You are a risk analyst. Focus on volatility, drawdowns, concentration risk, and tail risk. Use any stock or mover data provided to you. Give concise, actionable risk assessments and flag when something looks unusually risky.
+      workspace:
+        path: /workspace
+        persistentVolumeClaim:
+          claimName: agent-workspace-pvc
+      conversation:
+        enabled: true
+        maxHistory: 10
+      openTelemetry:
+        enabled: true
+        endpoint: http://otel-collector:4318
+        serviceName: analyst-risk
+        samplingRatio: 1.0
+
+  - name: analyst-momentum
+    spec:
+      image: agentickube-agent:latest
+      imagePullPolicy: IfNotPresent
+      description: Technical and momentum analysis (trends, strength, short-term moves).
+      llm:
+        modelName: qwen3:1.7b
+        baseUrl: http://ollama:11434/v1
+      prompts:
+        systemPrompt: |
+          You are a momentum and technical analyst. Focus on price trends, relative strength, and short-term moves. Comment on top gainers/losers and what might be driving them from a technical or momentum perspective.
+      workspace:
+        path: /workspace
+        persistentVolumeClaim:
+          claimName: agent-workspace-pvc
+      conversation:
+        enabled: true
+        maxHistory: 10
+      openTelemetry:
+        enabled: true
+        endpoint: http://otel-collector:4318
+        serviceName: analyst-momentum
+        samplingRatio: 1.0
+
+  - name: analyst-fundamentals
+    spec:
+      image: agentickube-agent:latest
+      imagePullPolicy: IfNotPresent
+      description: Fundamentals and sentiment (valuation, news, context for big movers).
+      llm:
+        modelName: qwen3:1.7b
+        baseUrl: http://ollama:11434/v1
+      prompts:
+        systemPrompt: |
+          You are a fundamentals and sentiment analyst. Focus on valuation, news, and narrative context for big movers. Help explain why names are in the top 10 gainers or losers and whether moves look justified by fundamentals or sentiment.
+      workspace:
+        path: /workspace
+        persistentVolumeClaim:
+          claimName: agent-workspace-pvc
+      conversation:
+        enabled: true
+        maxHistory: 10
+      openTelemetry:
+        enabled: true
+        endpoint: http://otel-collector:4318
+        serviceName: analyst-fundamentals
         samplingRatio: 1.0
 
 orchestrators:
-  - name: my-orchestrator
+  - name: stock-analytics-team
     spec:
       image: agentickube-orchestrator:latest
       imagePullPolicy: IfNotPresent
-      description: Dev orchestrator coordinating my-agent
+      description: Team for top-10 movers analysis; fetcher + risk, momentum, and fundamentals analysts.
       llm:
         modelName: qwen3:1.7b
         baseUrl: http://ollama:11434/v1
       agents:
-        - name: my-agent
-          description: General-purpose development agent
+        - name: stock-fetcher
+          description: Fetches stock data (Yahoo, top movers). Creates fetch-stocks skill if needed.
+        - name: analyst-risk
+          description: Risk assessment (volatility, drawdown, concentration, tail risk).
+        - name: analyst-momentum
+          description: Technical and momentum analysis (trends, strength, short-term moves).
+        - name: analyst-fundamentals
+          description: Fundamentals and sentiment (valuation, news, context for movers).
       strategy:
-        type: sequence
+        type: team
         maxRounds: 10
       openTelemetry:
         enabled: true
         endpoint: http://otel-collector:4318
-        serviceName: my-orchestrator
+        serviceName: stock-analytics-team
         samplingRatio: 1.0
