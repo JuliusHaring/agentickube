@@ -2,6 +2,19 @@
 
 <!-- version list -->
 
+## v3.0.0 (2026-03-06)
+
+### Documentation
+
+- Add meaningful examples
+  ([`78d0694`](https://github.com/JuliusHaring/agentickube/commit/78d069428ee2fc6822bbe9c79199b3aafef0b155))
+
+### Refactoring
+
+- Deploy helm charts instead of manifests
+  ([`2773f6e`](https://github.com/JuliusHaring/agentickube/commit/2773f6e5b7bafbcb6d4d5add87912389521f5d94))
+
+
 ## v2.1.0 (2026-03-06)
 
 ### Bug Fixes
