@@ -2,6 +2,33 @@
 
 <!-- version list -->
 
+## v3.0.1 (2026-03-06)
+
+### Bug Fixes
+
+- Fix skill tool call signature
+  ([`453cfb1`](https://github.com/JuliusHaring/agentickube/commit/453cfb17c52afcfda26aed6814cc5792cd63975c))
+
+- Pass system prompt to agent
+  ([`399320e`](https://github.com/JuliusHaring/agentickube/commit/399320e574c482c4e3fbddbca3db83b179cb9ff2))
+
+### Chores
+
+- Add more explicit examples
+  ([`5518d24`](https://github.com/JuliusHaring/agentickube/commit/5518d24f08e98d3cbc8c74d58ac98ca1ac15b75c))
+
+- Improve helm chart
+  ([`03be645`](https://github.com/JuliusHaring/agentickube/commit/03be6452efb93782917cf1b5be7a3b59bb20e66d))
+
+- Make internet skill fetch multiple urls if needed
+  ([`cc2fb11`](https://github.com/JuliusHaring/agentickube/commit/cc2fb111f4014c2d2c086d42363a6ae7f12a76e5))
+
+### Refactoring
+
+- Log tool usage during usage not after
+  ([`25b983e`](https://github.com/JuliusHaring/agentickube/commit/25b983e293a0bc4f5845f331c34ff60b0f39b7c6))
+
+
 ## v3.0.0 (2026-03-06)
 
 ### Documentation
