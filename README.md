@@ -58,6 +58,10 @@ Install from the **release zip** and **container images** (GHCR). No clone requi
 **From clone (optional)**  
 If you have the repo cloned, apply from the `deploy/` directory: same files and order as above (`agent-crd.yaml` → `orchestrator-crd.yaml` → `example-rbac.yaml` → `operator.yaml` → your Agent/Orchestrator CRs).
 
+## License
+
+This project is licensed under the MIT License — see [LICENSE](LICENSE).
+
 ## Contributing
 
 If you want to contribute feel free to check out [CONTRIBUTING.md](CONTRIBUTING.md)!
