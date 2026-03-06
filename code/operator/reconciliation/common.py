@@ -48,7 +48,7 @@ def llm_env(llm: LLMConfig | None) -> list[client.V1EnvVar]:
                 )
             )
     if llm.provider:
-        env.append(client.V1EnvVar(name="LLM_TYPE", value=llm.provider))
+        env.append(client.V1EnvVar(name="LLM_PROVIDER", value=llm.provider))
     return env
 
 
