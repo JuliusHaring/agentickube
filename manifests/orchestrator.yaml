@@ -15,3 +15,8 @@ spec:
   strategy:
     type: sequence
     maxRounds: 10
+  openTelemetry:
+    enabled: true
+    endpoint: http://otel-collector:4318
+    serviceName: my-orchestrator
+    samplingRatio: 1.0

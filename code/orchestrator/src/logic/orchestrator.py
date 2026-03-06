@@ -2,12 +2,16 @@
 
 import asyncio
 
+from opentelemetry import trace
+
 from config import orchestrator_config
 from logic.strategies import STRATEGY_MAP
 from shared.llm import LLMConfig
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+_tracer = trace.get_tracer(__name__)
 
 
 def orchestrate(
@@ -40,13 +44,21 @@ def orchestrate(
     except Exception:
         llm_config = None
 
-    result, effective_session_id = asyncio.run(
-        strategy_fn(
-            query=query,
-            agents=cfg.agents,
-            max_rounds=cfg.max_rounds,
-            llm_config=llm_config,
-            session_id=session_id,
+    with _tracer.start_as_current_span(
+        "orchestrate",
+        attributes={
+            "orchestrator.name": cfg.orchestrator_name or "",
+            "orchestrator.strategy": strategy_name,
+            "orchestrator.agents": [a.name for a in cfg.agents],
+        },
+    ):
+        result, effective_session_id = asyncio.run(
+            strategy_fn(
+                query=query,
+                agents=cfg.agents,
+                max_rounds=cfg.max_rounds,
+                llm_config=llm_config,
+                session_id=session_id,
+            )
         )
-    )
     return (result, effective_session_id)

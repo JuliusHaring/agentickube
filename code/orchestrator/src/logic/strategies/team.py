@@ -1,5 +1,6 @@
 """team strategy: an LLM moderator decides which agent to address next."""
 
+from opentelemetry import trace
 from pydantic_ai import Agent
 
 from config import AgentEndpoint
@@ -8,6 +9,8 @@ from shared.llm import LLMConfig, get_model
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+_tracer = trace.get_tracer(__name__)
 
 _MODERATOR_INSTRUCTIONS = """\
 You are a moderator coordinating a team of AI agents.
@@ -47,38 +50,52 @@ async def run_team(
     transcript: list[str] = [f"User query: {query}", roster]
     effective_session_id = session_id
 
-    for round_num in range(1, max_rounds + 1):
-        prompt = "\n\n".join(transcript)
-        result = await moderator.run(user_prompt=prompt)
-        decision = result.output.strip()
+    with _tracer.start_as_current_span(
+        "strategy team",
+        attributes={
+            "strategy.agent_count": len(agents),
+            "strategy.max_rounds": max_rounds,
+        },
+    ) as span:
+        for round_num in range(1, max_rounds + 1):
+            prompt = "\n\n".join(transcript)
+            result = await moderator.run(user_prompt=prompt)
+            decision = result.output.strip()
 
-        logger.info("team round %d: moderator decided '%s'", round_num, decision[:80])
-
-        chosen = None
-        if decision.upper().startswith("DONE:"):
-            answer_part = decision[5:].strip()
-            # Model said "DONE: agent-name" → treat as misformatted delegation
-            if answer_part in agent_map:
-                chosen = agent_map[answer_part]
-            else:
-                return (answer_part, effective_session_id)
-
-        if chosen is None:
-            chosen = agent_map.get(decision)
-        if not chosen:
-            transcript.append(
-                f"Moderator selected unknown agent '{decision}'. "
-                f"Valid names: {list(agent_map.keys())}"
+            logger.info(
+                "team round %d: moderator decided '%s'", round_num, decision[:80]
             )
-            continue
 
-        context = "\n\n".join(transcript)
-        response, agent_sid = await query_agent(
-            chosen.url, context, session_id=effective_session_id
-        )
-        if agent_sid and not effective_session_id:
-            effective_session_id = agent_sid
-        transcript.append(f"Agent {chosen.name} responded:\n{response}")
+            chosen = None
+            if decision.upper().startswith("DONE:"):
+                answer_part = decision[5:].strip()
+                if answer_part in agent_map:
+                    chosen = agent_map[answer_part]
+                else:
+                    span.set_attribute("strategy.rounds_used", round_num)
+                    return (answer_part, effective_session_id)
+
+            if chosen is None:
+                chosen = agent_map.get(decision)
+            if not chosen:
+                transcript.append(
+                    f"Moderator selected unknown agent '{decision}'. "
+                    f"Valid names: {list(agent_map.keys())}"
+                )
+                continue
+
+            context = "\n\n".join(transcript)
+            response, agent_sid = await query_agent(
+                chosen.url,
+                context,
+                session_id=effective_session_id,
+                agent_name=chosen.name,
+            )
+            if agent_sid and not effective_session_id:
+                effective_session_id = agent_sid
+            transcript.append(f"Agent {chosen.name} responded:\n{response}")
+
+        span.set_attribute("strategy.rounds_used", max_rounds)
 
     final_prompt = (
         "\n\n".join(transcript)

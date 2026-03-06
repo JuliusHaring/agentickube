@@ -1,6 +1,8 @@
 """HTTP client for calling agent /query endpoints."""
 
 import httpx
+from opentelemetry import trace
+from opentelemetry.propagate import inject
 
 from shared.logging import get_logger
 
@@ -8,20 +10,41 @@ logger = get_logger(__name__)
 
 DEFAULT_TIMEOUT = 300.0
 
+_tracer = trace.get_tracer(__name__)
+
 
 async def query_agent(
     url: str,
     query: str,
     session_id: str | None = None,
     timeout: float = DEFAULT_TIMEOUT,
+    agent_name: str | None = None,
 ) -> tuple[str, str | None]:
-    """Call agent /query. Returns (response_text, session_id_from_agent or None)."""
-    body: dict = {"query": query}
-    if session_id:
-        body["session_id"] = session_id
-    async with httpx.AsyncClient(timeout=timeout) as client:
-        logger.info("Calling agent at %s", url)
-        resp = await client.post(url, json=body)
-        resp.raise_for_status()
-        data = resp.json()
+    """Call agent /query. Returns (response_text, session_id_from_agent or None).
+
+    When OTEL is configured, creates a span for the call and propagates
+    W3C trace context (traceparent) so the agent's spans become children.
+    """
+    span_name = f"call_agent {agent_name}" if agent_name else "call_agent"
+    with _tracer.start_as_current_span(
+        span_name,
+        attributes={
+            "agent.name": agent_name or "",
+            "agent.url": url,
+        },
+    ) as span:
+        body: dict = {"query": query}
+        if session_id:
+            body["session_id"] = session_id
+
+        headers: dict[str, str] = {}
+        inject(headers)
+
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            logger.info("Calling agent at %s", url)
+            resp = await client.post(url, json=body, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+
+        span.set_attribute("http.status_code", resp.status_code)
         return (data["response"], data.get("session_id"))

@@ -8,11 +8,11 @@ AGENT_QUERY when spec.trigger.type is "job" or "cron".
 import logging.config
 import sys
 
-from logic.skills import seed_workspace_skills
+from logic.skills import sync_workspace_from_repo
 from logic.agent import agent_loop
 from config import AgentCLIConfig
 from shared.logging import LOGGING_CONFIG, get_logger
-from logic.otel import setup_cli_opentelemetry
+from shared.otel import setup_cli_opentelemetry
 
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = get_logger(__name__)
@@ -26,8 +26,8 @@ def main() -> int:
         logger.error("AGENT_QUERY environment variable is required")
         return 1
 
-    seed_workspace_skills()
-    setup_cli_opentelemetry()
+    sync_workspace_from_repo()
+    setup_cli_opentelemetry(default_service_name="agent")
 
     logger.info("CLI run started: query=%s", query[:120])
     result = agent_loop(

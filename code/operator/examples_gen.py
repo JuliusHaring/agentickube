@@ -31,8 +31,8 @@ from models import (  # noqa: E402
     MCPServerConfig,
     OpenTelemetryConfig,
     OrchestratorSpec,
-    PromptsConfig,
     PVCConfig,
+    PromptsConfig,
     StrategyConfig,
     TriggerConfig,
     WorkspaceConfig,
@@ -154,6 +154,12 @@ def _dev_orchestrator_spec() -> OrchestratorSpec:
             AgentRef(name="my-agent", description="General-purpose development agent"),
         ],
         strategy=StrategyConfig(type="sequence"),
+        open_telemetry=OpenTelemetryConfig(
+            enabled=True,
+            endpoint="http://otel-collector:4318",
+            service_name="my-orchestrator",
+            sampling_ratio=1.0,
+        ),
     )
 
 
@@ -187,6 +193,12 @@ def _cron_orchestrator_spec() -> OrchestratorSpec:
             type="cron",
             query="Analyze cluster health from multiple perspectives",
             schedule="0 */6 * * *",
+        ),
+        open_telemetry=OpenTelemetryConfig(
+            enabled=True,
+            endpoint="http://otel-collector:4318",
+            service_name="my-orchestrator",
+            sampling_ratio=1.0,
         ),
     )
 

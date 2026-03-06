@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from config import agent_config
 from logic.skills import sync_workspace_from_repo
 from routes import query_router
-from logic.otel import setup_fastapi_opentelemetry
+from shared.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
 
 logger = get_logger(__name__)
@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Agent", lifespan=lifespan)
 
-setup_fastapi_opentelemetry(app)
+setup_fastapi_opentelemetry(app, default_service_name="agent")
 app.include_router(query_router)
 
 

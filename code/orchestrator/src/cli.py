@@ -9,6 +9,7 @@ import logging.config
 import sys
 
 from logic.orchestrator import orchestrate
+from shared.otel import setup_cli_opentelemetry
 from config import OrchestratorCLIConfig
 from shared.logging import LOGGING_CONFIG, get_logger
 
@@ -24,6 +25,8 @@ def main() -> int:
         logger.error("AGENT_QUERY environment variable is required")
         return 1
 
+    setup_cli_opentelemetry(default_service_name="orchestrator")
+
     logger.info("CLI run started: query=%s", query[:120])
     try:
         result = orchestrate(query)
@@ -34,6 +37,16 @@ def main() -> int:
 
     logger.info("CLI run completed")
     print(result)
+
+    try:
+        from opentelemetry import trace
+
+        provider = trace.get_tracer_provider()
+        if hasattr(provider, "force_flush"):
+            provider.force_flush(timeout_millis=5000)
+    except Exception:
+        pass
+
     return 0
 
 
