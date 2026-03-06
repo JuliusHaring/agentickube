@@ -17,11 +17,11 @@ class HistoryMessage(BaseModel):
 
 
 def validate_session_id(session_id: str | None, *, memory_enabled: bool) -> str:
-    """Resolve or validate session_id. Returns a UUID string.
+    """Resolve or validate session_id. Returns a UUID in 32-char hex (no hyphens).
 
     - If memory_enabled is False and session_id is provided, raises ValueError.
     - If session_id is missing/empty, returns a new UUID (hex).
-    - Otherwise validates session_id as UUID and returns it (normalized string).
+    - Otherwise validates session_id as UUID and returns it normalized to hex.
     """
     if not memory_enabled and session_id and session_id.strip():
         raise ValueError(
@@ -32,7 +32,7 @@ def validate_session_id(session_id: str | None, *, memory_enabled: bool) -> str:
     if not session_id or session_id.strip() == "":
         return uuid.uuid4().hex
     try:
-        return str(uuid.UUID(session_id.strip()))
+        return uuid.UUID(session_id.strip()).hex
     except (ValueError, TypeError, AttributeError):
         raise ValueError("session_id must be a valid UUID")
 
