@@ -1,6 +1,10 @@
 version: '3'
 
 tasks:
+  uninstall: 
+    cmds:
+      - helm uninstall agentickube -n agentickube-ns
+
   install-local:
     desc: Install or upgrade the chart from ./chart/agentickube (generates CRDs first)
     deps:

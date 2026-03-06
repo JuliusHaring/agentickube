@@ -15,9 +15,6 @@ class MCPServerConfig(BaseModel):
 
 class AgentConfig(BaseSettings):
     agent_name: Optional[str] = Field(default=None, validation_alias="AGENT_NAME")
-    agent_description: Optional[str] = Field(
-        default=None, validation_alias="AGENT_DESCRIPTION"
-    )
     system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
     workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")

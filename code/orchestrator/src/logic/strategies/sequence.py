@@ -26,10 +26,16 @@ async def run_sequence(
     ):
         for i, agent in enumerate(agents):
             if previous_response:
+                prev_name = agents[i - 1].name
                 full_query = (
-                    f"{query}\n\n"
-                    f"Previous agent ({agents[i - 1].name}) response:\n"
+                    "-----------\n"
+                    f"OUTPUT FROM PREVIOUS STEP (agent: {prev_name}):\n"
+                    "-----------\n"
                     f"{previous_response}"
+                    "-----------\n"
+                    "USER REQUEST:\n"
+                    "-----------\n"
+                    f"{query}\n\n"
                 )
             else:
                 full_query = query

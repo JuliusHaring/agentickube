@@ -1,5 +1,5 @@
 ---
-name: create-skills
+name: create-skill
 description: Create new agent skills (SKILL.md files with optional code/ tools) for this agentickube agent. Use when the user asks to create, write, or define a new skill, or asks about skill structure, format, or best practices.
 ---
 

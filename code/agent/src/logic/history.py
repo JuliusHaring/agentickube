@@ -20,19 +20,18 @@ def get_history(session_id: str | None, use_memory: bool) -> list[HistoryMessage
 
 
 def history_to_model_messages(history: list[HistoryMessage]) -> list[ModelMessage]:
-    """Convert session history to the message format expected by the agent run."""
+    """Convert session history to the message format expected by the agent run.
+
+    We only send user and assistant text (m.content), not full intermediate_messages
+    (tool calls and tool results). Replaying full tool results (e.g. entire HTML pages)
+    would blow input tokens and hit model limits (400) or quota (429).
+    """
     result: list[ModelMessage] = []
     for m in history:
         if m.role == "user":
             result.append(ModelRequest(parts=[UserPromptPart(m.content)]))
         else:
-            if m.intermediate_messages:
-                decoded = ModelMessagesTypeAdapter.validate_python(
-                    m.intermediate_messages
-                )
-                result.extend(decoded)
-            else:
-                result.append(ModelResponse(parts=[TextPart(content=m.content)]))
+            result.append(ModelResponse(parts=[TextPart(content=m.content)]))
     return result
 
 

@@ -129,8 +129,6 @@ def _build_agent_env(
         *_skills_env(spec.skills, has_inline_cm),
         *extra_env(spec.env or []),
     ]
-    if spec.description:
-        env.append(client.V1EnvVar(name="AGENT_DESCRIPTION", value=spec.description))
     return env
 
 

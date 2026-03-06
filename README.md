@@ -15,7 +15,7 @@ Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator
 |---|---|
 | 🧩 | **One resource** — one `Agent` = one workload (HTTP, one-off Job, or Cron) |
 | 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
-| 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skills/SKILL.md) |
+| 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skill/SKILL.md) |
 | 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
 | 🤝 | **Orchestrator** — optional multi-agent coordination (sequence, team) |
 | 📦 | **Helm OCI** — one command to install CRDs + operator from GHCR |

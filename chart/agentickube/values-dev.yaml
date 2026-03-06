@@ -1,5 +1,11 @@
-# Example: agent team for stock analytics (Ollama + OTEL + Jaeger).
+# Example: agent sequence for stock analytics (Ollama + OTEL + Jaeger).
 # Usage: helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
+# When you remove an agent/orchestrator from the lists below, upgrade will delete that CR (and the operator will remove its pods).
+#
+# Temporary: Gemini 3 for dev. Do not commit real API keys long-term; use a Secret + apiKey.secretName/secretKey in production.
+_llm: &llm
+  modelName: qwen3:1.7b
+  baseUrl: http://ollama:11434/v1
 
 operator:
   image:
@@ -39,15 +45,12 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      description: Fetches stock data (e.g. Yahoo). Creates and uses a fetch-stocks skill.
-      llm:
-        modelName: qwen3:1.7b
-        baseUrl: http://ollama:11434/v1
+      llm: *llm
       prompts:
         systemPrompt: |
-          You are a stock-data agent. Your job is to fetch and return stock data (prices, movers, etc.) when asked.
-          If you do not yet have a skill named "fetch-stocks" for querying Yahoo (or similar) stock data, create it first in your workspace (e.g. as a SKILL.md in workspace/skills/fetch-stocks/), then use it to answer. Prefer using a dedicated skill so results are consistent and reusable.
-          When asked for top movers, gainers, or losers, return structured data (e.g. symbol, change, percent) and cite the source.
+          You are the first step in a stock-analytics pipeline. You are the only agent that fetches live stock data; the analysts that run after you will use your output only.
+
+          Your job: fetch and return stock data (prices, top movers/gainers/losers, etc.) when asked. If you do not yet have a skill named "fetch-stocks" for querying Yahoo (or similar), then use it. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -65,13 +68,12 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      description: Assesses risk (volatility, drawdown, concentration, tail risk).
-      llm:
-        modelName: qwen3:1.7b
-        baseUrl: http://ollama:11434/v1
+      llm: *llm
       prompts:
         systemPrompt: |
-          You are a risk analyst. Focus on volatility, drawdowns, concentration risk, and tail risk. Use any stock or mover data provided to you. Give concise, actionable risk assessments and flag when something looks unusually risky.
+          You are the risk analyst in a stock-analytics pipeline. You run after the stock-fetcher. Your input will be the user's original question plus a "Previous agent (stock-fetcher) response:" block with the mover data. Do not fetch data yourself.
+
+          Your only job: output a short risk assessment of that data (volatility, drawdown, concentration, tail risk). Do NOT repeat the mover list, do NOT answer the original question (e.g. "here are the top 3 movers"). Output only your risk analysis so the next agent and the user get your added value.
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -89,13 +91,12 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      description: Technical and momentum analysis (trends, strength, short-term moves).
-      llm:
-        modelName: qwen3:1.7b
-        baseUrl: http://ollama:11434/v1
+      llm: *llm
       prompts:
         systemPrompt: |
-          You are a momentum and technical analyst. Focus on price trends, relative strength, and short-term moves. Comment on top gainers/losers and what might be driving them from a technical or momentum perspective.
+          You are the momentum/technical analyst in a stock-analytics pipeline. Your input will be the user question plus "Previous agent" response(s) with stock data and risk view. Do not fetch data yourself.
+
+          Your only job: output a short momentum/technical analysis (trends, relative strength, what might be driving the moves). Do NOT repeat the mover list or re-answer "top 3 movers". Output only your analysis so the pipeline gets your added value.
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -109,53 +110,24 @@ agents:
         serviceName: analyst-momentum
         samplingRatio: 1.0
 
-  - name: analyst-fundamentals
-    spec:
-      image: agentickube-agent:latest
-      imagePullPolicy: IfNotPresent
-      description: Fundamentals and sentiment (valuation, news, context for big movers).
-      llm:
-        modelName: qwen3:1.7b
-        baseUrl: http://ollama:11434/v1
-      prompts:
-        systemPrompt: |
-          You are a fundamentals and sentiment analyst. Focus on valuation, news, and narrative context for big movers. Help explain why names are in the top 10 gainers or losers and whether moves look justified by fundamentals or sentiment.
-      workspace:
-        path: /workspace
-        persistentVolumeClaim:
-          claimName: agent-workspace-pvc
-      conversation:
-        enabled: true
-        maxHistory: 10
-      openTelemetry:
-        enabled: true
-        endpoint: http://otel-collector:4318
-        serviceName: analyst-fundamentals
-        samplingRatio: 1.0
-
 orchestrators:
-  - name: stock-analytics-team
+  - name: stock-analytics-sequence
     spec:
       image: agentickube-orchestrator:latest
       imagePullPolicy: IfNotPresent
-      description: Team for top-10 movers analysis; fetcher + risk, momentum, and fundamentals analysts.
-      llm:
-        modelName: qwen3:1.7b
-        baseUrl: http://ollama:11434/v1
+      llm: *llm
       agents:
         - name: stock-fetcher
-          description: Fetches stock data (Yahoo, top movers). Creates fetch-stocks skill if needed.
+          description: Step 1. Fetches stock data (Yahoo, top movers). Only agent that fetches; creates fetch-stocks skill if needed.
         - name: analyst-risk
-          description: Risk assessment (volatility, drawdown, concentration, tail risk).
+          description: Step 2. Risk assessment on fetcher output only (volatility, drawdown, tail risk). Does not fetch.
         - name: analyst-momentum
-          description: Technical and momentum analysis (trends, strength, short-term moves).
-        - name: analyst-fundamentals
-          description: Fundamentals and sentiment (valuation, news, context for movers).
+          description: Step 3. Momentum/technical analysis on data from prior steps. Does not fetch.
       strategy:
-        type: team
+        type: sequence
         maxRounds: 10
       openTelemetry:
         enabled: true
         endpoint: http://otel-collector:4318
-        serviceName: stock-analytics-team
+        serviceName: stock-analytics-sequence
         samplingRatio: 1.0

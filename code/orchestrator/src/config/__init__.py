@@ -10,15 +10,11 @@ from shared.llm import LLMConfig  # noqa: F401
 class AgentEndpoint(BaseModel):
     name: str
     url: str
-    description: str = ""
 
 
 class OrchestratorConfig(BaseSettings):
     orchestrator_name: Optional[str] = Field(
         default=None, validation_alias="ORCHESTRATOR_NAME"
-    )
-    orchestrator_description: Optional[str] = Field(
-        default=None, validation_alias="ORCHESTRATOR_DESCRIPTION"
     )
     strategy: str = Field(default="sequence", validation_alias="ORCHESTRATOR_STRATEGY")
     max_rounds: int = Field(default=10, validation_alias="ORCHESTRATOR_MAX_ROUNDS")

@@ -60,4 +60,4 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         return output
     except Exception as e:
         logger.error("Agent run failed: %s", e)
-        return "Agent error. Please try again."
+        raise e

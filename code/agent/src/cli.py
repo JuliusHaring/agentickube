@@ -14,6 +14,8 @@ from config import AgentCLIConfig
 from shared.logging import LOGGING_CONFIG, get_logger
 from shared.otel import setup_cli_opentelemetry
 
+from opentelemetry import trace
+
 logging.config.dictConfig(LOGGING_CONFIG)
 logger = get_logger(__name__)
 
@@ -43,14 +45,9 @@ def main() -> int:
     logger.info("CLI run completed")
     print(result)
 
-    try:
-        from opentelemetry import trace
-
-        provider = trace.get_tracer_provider()
-        if hasattr(provider, "force_flush"):
-            provider.force_flush(timeout_millis=5000)
-    except Exception:
-        pass
+    provider = trace.get_tracer_provider()
+    if hasattr(provider, "force_flush"):
+        provider.force_flush(timeout_millis=5000)
 
     return 0
 

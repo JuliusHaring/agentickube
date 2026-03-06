@@ -79,10 +79,6 @@ def _orchestrator_env(spec: OrchestratorSpec, name: str) -> list[client.V1EnvVar
         client.V1EnvVar(name="ORCHESTRATOR_STRATEGY", value=strategy.type),
         client.V1EnvVar(name="ORCHESTRATOR_MAX_ROUNDS", value=str(strategy.max_rounds)),
     ]
-    if spec.description:
-        env.append(
-            client.V1EnvVar(name="ORCHESTRATOR_DESCRIPTION", value=spec.description)
-        )
     return env
 
 
