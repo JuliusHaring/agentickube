@@ -1,43 +1,23 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+
+from shared.llm import LLMConfig  # noqa: F401 (re-exported for backward compat)
 
 
 class MCPServerConfig(BaseModel):
     url: str
-    type: Literal["sse", "streamable_http"]
-
-
-def _mcp_servers_from_env() -> list[dict]:
-    """Read MCP servers from env (MCP_SERVER_1_URL, MCP_SERVER_1_TYPE, ...).
-    The operator sets these from the Agent CRD spec.mcpServers."""
-    servers = []
-    i = 1
-    while True:
-        url = os.environ.get(f"MCP_SERVER_{i}_URL")
-        if not url:
-            break
-        type_ = os.environ.get(f"MCP_SERVER_{i}_TYPE", "streamable_http")
-        servers.append({"url": url.strip(), "type": type_.strip().lower()})
-        i += 1
-    return servers
-
-
-class LLMConfig(BaseSettings):
-    """Agent config. LLM-related values are read from LLM_* env vars (set by operator from Agent CR spec.llm)."""
-
-    model_config = SettingsConfigDict(env_prefix="LLM_")
-
-    provider: Literal["openai", "google", "huggingface", "ollama"] = "openai"
-    model_name: str
-    base_url: Optional[str] = None
-    api_key: str = ""
+    type: str
 
 
 class AgentConfig(BaseSettings):
+    agent_name: Optional[str] = Field(default=None, validation_alias="AGENT_NAME")
+    agent_description: Optional[str] = Field(
+        default=None, validation_alias="AGENT_DESCRIPTION"
+    )
     system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
     workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
@@ -56,6 +36,8 @@ class AgentConfig(BaseSettings):
     conversation_max_history: int = Field(
         default=20, validation_alias="CONVERSATION_MAX_HISTORY"
     )
+    port: int = Field(default=8000, validation_alias="PORT")
+    reload: bool = Field(default=False, validation_alias="RELOAD")
 
     @property
     def skills_dir(self) -> str:
@@ -65,9 +47,9 @@ class AgentConfig(BaseSettings):
     @field_validator("mcp_servers", mode="before")
     @classmethod
     def parse_mcp_servers(cls, v: object) -> list[dict]:
-        from_env = _mcp_servers_from_env()
-        if from_env:
-            return from_env
+        servers = _mcp_servers_from_env()
+        if servers:
+            return servers
         if isinstance(v, list):
             return list(v)
         return []
@@ -75,6 +57,21 @@ class AgentConfig(BaseSettings):
 
 class AgentCLIConfig(AgentConfig):
     agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
+
+
+def _mcp_servers_from_env() -> list[dict]:
+    """Read MCP servers from numbered env vars (MCP_SERVER_1_URL, MCP_SERVER_1_TYPE, ...).
+    Pydantic-settings can't handle dynamic numbered keys, so we read them explicitly."""
+    servers = []
+    i = 1
+    while True:
+        url = os.environ.get(f"MCP_SERVER_{i}_URL")
+        if not url:
+            break
+        type_ = os.environ.get(f"MCP_SERVER_{i}_TYPE", "streamable_http")
+        servers.append({"url": url.strip(), "type": type_.strip().lower()})
+        i += 1
+    return servers
 
 
 llm_config = LLMConfig()

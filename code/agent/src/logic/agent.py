@@ -5,7 +5,6 @@ from logic.sessions import (
     load_history,
     save_history,
     extract_steps_from_run,
-    history_prompt,
 )
 from config import agent_config
 from logic.providers import get_model
@@ -36,13 +35,17 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
 
     try:
         skills = skills_prompt()
-        hist = history_prompt(history)
         logger.info(f"Skills: {skills}")
-        logger.info(f"History: {hist}")
-        pieces = [p for p in [skills, hist, query] if p]
-        full_query = "\n\n".join(pieces)
 
-        res = _build_agent().run_sync(user_prompt=full_query)
+        # Build message history for the model instead of prepending history to the prompt.
+        message_history = [{"role": m.role, "content": m.content} for m in history]
+        user_content_parts = [p for p in [skills, query] if p]
+        user_prompt = "\n\n".join(user_content_parts)
+
+        res = _build_agent().run_sync(
+            user_prompt=user_prompt,
+            message_history=message_history or None,
+        )
         output = res.output
 
         if use_memory:

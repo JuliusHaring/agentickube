@@ -4,10 +4,8 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
-from config import agent_config
-from logic.skills import seed_workspace_skills
+from config import orchestrator_config
 from routes import query_router
-from logic.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
 
 logging.config.dictConfig(LOGGING_CONFIG)
@@ -16,14 +14,12 @@ logger = get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    seed_workspace_skills()
-    logger.info("Application startup complete")
+    logger.info("Orchestrator startup complete")
     yield
 
 
-app = FastAPI(title="Agent", lifespan=lifespan)
+app = FastAPI(title="Orchestrator", lifespan=lifespan)
 
-setup_fastapi_opentelemetry(app)
 app.include_router(query_router)
 
 
@@ -31,7 +27,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=agent_config.port,
-        reload=agent_config.reload,
+        port=orchestrator_config.port,
+        reload=orchestrator_config.reload,
         log_config=LOGGING_CONFIG,
     )

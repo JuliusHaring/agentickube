@@ -1,6 +1,6 @@
 """
 Reconcile Agent spec into Kubernetes resources (Deployment, Job, CronJob,
-and optional skills ConfigMap).  Used by the Kopf handlers in main.py.
+optional skills ConfigMap, and Service).  Used by the Kopf handlers in main.py.
 """
 
 from __future__ import annotations
@@ -12,73 +12,59 @@ from kubernetes.client.rest import ApiException
 from models import (
     AgentSpec,
     ConversationConfig,
-    EnvVar,
-    LLMConfig,
     MCPServerConfig,
-    OpenTelemetryConfig,
     SkillsConfig,
     TriggerConfig,
     WorkspaceConfig,
 )
+from .common import (
+    CLI_COMMAND,
+    DEFAULT_PULL_POLICY,
+    build_container_sc,
+    build_pod_sc,
+    build_resources,
+    build_tolerations,
+    extra_env,
+    llm_env,
+    otel_env,
+    trigger_env,
+)
 
 # ── Constants ────────────────────────────────────────────────────────────────
 
-CRD_GROUP = "agents.ai.juliusharing.com"
-DEPLOYMENT_PREFIX = "agent-"
+AGENT_CRD_GROUP = "agents.ai.juliusharing.com"
+AGENT_PREFIX = "agent-"
 WORKSPACE_VOL = "workspace"
 SKILLS_VOL = "custom-skills"
 SKILLS_MOUNT = "/skills/bootstrap"
 
-DEFAULT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
-DEFAULT_PULL_POLICY = "IfNotPresent"
+DEFAULT_AGENT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
 
 
 # ── Naming ────────────────────────────────────────────────────────────────────
 
 
-def deployment_name(agent: str) -> str:
-    return f"{DEPLOYMENT_PREFIX}{agent}"
+def agent_deployment_name(name: str) -> str:
+    return f"{AGENT_PREFIX}{name}"
 
 
-def job_name(agent: str) -> str:
-    return f"{DEPLOYMENT_PREFIX}{agent}"
+def agent_job_name(name: str) -> str:
+    return f"{AGENT_PREFIX}{name}"
 
 
-def cronjob_name(agent: str) -> str:
-    return f"{DEPLOYMENT_PREFIX}{agent}"
+def agent_cronjob_name(name: str) -> str:
+    return f"{AGENT_PREFIX}{name}"
 
 
-def _skills_cm_name(agent: str) -> str:
-    return f"agent-{agent}-skills"
+def agent_service_name(name: str) -> str:
+    return f"{AGENT_PREFIX}{name}"
 
 
-# ── Environment variable builders ─────────────────────────────────────────────
+def _skills_cm_name(name: str) -> str:
+    return f"agent-{name}-skills"
 
 
-def _llm_env(llm: LLMConfig | None) -> list[client.V1EnvVar]:
-    llm = llm or LLMConfig()
-    env = [
-        client.V1EnvVar(name="LLM_MODEL_NAME", value=llm.model_name or ""),
-        client.V1EnvVar(name="LLM_BASE_URL", value=llm.base_url or ""),
-    ]
-    if llm.api_key:
-        key = llm.api_key
-        if key.raw:
-            env.append(client.V1EnvVar(name="LLM_API_KEY", value=key.raw))
-        elif key.secret_name and key.secret_key:
-            env.append(
-                client.V1EnvVar(
-                    name="LLM_API_KEY",
-                    value_from=client.V1EnvVarSource(
-                        secret_key_ref=client.V1SecretKeySelector(
-                            name=key.secret_name, key=key.secret_key
-                        )
-                    ),
-                )
-            )
-    if llm.provider:
-        env.append(client.V1EnvVar(name="LLM_TYPE", value=llm.provider))
-    return env
+# ── Agent-specific environment variable builders ─────────────────────────────
 
 
 def _mcp_env(servers: list[MCPServerConfig]) -> list[client.V1EnvVar]:
@@ -100,29 +86,6 @@ def _conversation_env(conv: ConversationConfig | None) -> list[client.V1EnvVar]:
         client.V1EnvVar(name="CONVERSATION_MEMORY_ENABLED", value="true"),
         client.V1EnvVar(name="CONVERSATION_MAX_HISTORY", value=str(n)),
     ]
-
-
-def _otel_env(
-    otel: OpenTelemetryConfig | None, agent_name: str
-) -> list[client.V1EnvVar]:
-    if not otel or not otel.enabled or not otel.endpoint:
-        return []
-    endpoint = otel.endpoint.strip().rstrip("/")
-    svc = (otel.service_name or "").strip() or f"agent-{agent_name}"
-    env = [
-        client.V1EnvVar(name="OTEL_EXPORTER_OTLP_ENDPOINT", value=endpoint),
-        client.V1EnvVar(name="OTEL_SERVICE_NAME", value=svc),
-        client.V1EnvVar(name="OTEL_RESOURCE_ATTRIBUTES", value=f"service.name={svc}"),
-    ]
-    if otel.sampling_ratio is not None:
-        ratio = max(0.0, min(1.0, otel.sampling_ratio))
-        env.append(
-            client.V1EnvVar(
-                name="OTEL_TRACES_SAMPLER", value="parentbased_traceidratio"
-            )
-        )
-        env.append(client.V1EnvVar(name="OTEL_TRACES_SAMPLER_ARG", value=str(ratio)))
-    return env
 
 
 def _skills_env(
@@ -148,53 +111,23 @@ def _skills_env(
     return env
 
 
-def _extra_env(env_vars: list[EnvVar]) -> list[client.V1EnvVar]:
-    out: list[client.V1EnvVar] = []
-    for ev in env_vars:
-        if ev.value_from:
-            src = ev.value_from
-            if src.secret_key_ref and src.secret_key_ref.name:
-                out.append(
-                    client.V1EnvVar(
-                        name=ev.name,
-                        value_from=client.V1EnvVarSource(
-                            secret_key_ref=client.V1SecretKeySelector(
-                                name=src.secret_key_ref.name,
-                                key=src.secret_key_ref.key,
-                            )
-                        ),
-                    )
-                )
-            elif src.config_map_key_ref and src.config_map_key_ref.name:
-                out.append(
-                    client.V1EnvVar(
-                        name=ev.name,
-                        value_from=client.V1EnvVarSource(
-                            config_map_key_ref=client.V1ConfigMapKeySelector(
-                                name=src.config_map_key_ref.name,
-                                key=src.config_map_key_ref.key,
-                            )
-                        ),
-                    )
-                )
-        elif ev.value is not None:
-            out.append(client.V1EnvVar(name=ev.name, value=str(ev.value)))
-    return out
-
-
-def _build_env_vars(
-    spec: AgentSpec, agent_name: str, has_inline_cm: bool
+def _build_agent_env(
+    spec: AgentSpec, name: str, has_inline_cm: bool
 ) -> list[client.V1EnvVar]:
     ws = spec.workspace or WorkspaceConfig()
-    return [
-        *_llm_env(spec.llm),
+    env = [
+        client.V1EnvVar(name="AGENT_NAME", value=name),
+        *llm_env(spec.llm),
         *_mcp_env(spec.mcp_servers or []),
         client.V1EnvVar(name="WORKSPACE_DIR", value=ws.path),
         *_conversation_env(spec.conversation),
-        *_otel_env(spec.open_telemetry, agent_name),
+        *otel_env(spec.open_telemetry, name),
         *_skills_env(spec.skills, has_inline_cm),
-        *_extra_env(spec.env or []),
+        *extra_env(spec.env or []),
     ]
+    if spec.description:
+        env.append(client.V1EnvVar(name="AGENT_DESCRIPTION", value=spec.description))
+    return env
 
 
 # ── Volume builders ───────────────────────────────────────────────────────────
@@ -217,7 +150,7 @@ def _workspace_volume(workspace: WorkspaceConfig) -> tuple[str, client.V1Volume]
 
 
 def _skills_volumes(
-    agent_name: str, spec: AgentSpec, has_inline_cm: bool
+    name: str, spec: AgentSpec, has_inline_cm: bool
 ) -> tuple[list[client.V1Volume], list[client.V1VolumeMount]]:
     """Build a projected volume from all operator-provided skill sources."""
     skills = spec.skills or SkillsConfig()
@@ -227,9 +160,7 @@ def _skills_volumes(
     if has_inline_cm:
         sources.append(
             client.V1VolumeProjection(
-                config_map=client.V1ConfigMapProjection(
-                    name=_skills_cm_name(agent_name)
-                )
+                config_map=client.V1ConfigMapProjection(name=_skills_cm_name(name))
             )
         )
 
@@ -266,97 +197,26 @@ def _skills_volumes(
     return [vol], [mount]
 
 
-# ── K8s object converters ──────────────────────────────────────────────────────
-
-
-def _build_resources(
-    spec: AgentSpec,
-) -> client.V1ResourceRequirements | None:
-    r = spec.resources
-    if not r or (not r.requests and not r.limits):
-        return None
-    return client.V1ResourceRequirements(
-        requests=r.requests or None, limits=r.limits or None
-    )
-
-
-def _build_container_sc(
-    spec: AgentSpec,
-) -> client.V1SecurityContext | None:
-    sc = spec.security_context
-    if not sc:
-        return None
-    caps = None
-    if sc.capabilities:
-        caps = client.V1SecurityCapabilities(
-            add=sc.capabilities.add or [], drop=sc.capabilities.drop or []
-        )
-    return client.V1SecurityContext(
-        run_as_user=sc.run_as_user,
-        run_as_group=sc.run_as_group,
-        run_as_non_root=sc.run_as_non_root,
-        allow_privilege_escalation=sc.allow_privilege_escalation,
-        read_only_root_filesystem=sc.read_only_root_filesystem,
-        capabilities=caps,
-    )
-
-
-def _build_pod_sc(spec: AgentSpec) -> client.V1PodSecurityContext | None:
-    psc = spec.pod_security_context
-    if not psc:
-        return None
-    seccomp = None
-    if psc.seccomp_profile:
-        seccomp = client.V1SeccompProfile(
-            type=psc.seccomp_profile.type,
-            localhost_profile=psc.seccomp_profile.localhost_profile,
-        )
-    return client.V1PodSecurityContext(
-        run_as_user=psc.run_as_user,
-        run_as_group=psc.run_as_group,
-        run_as_non_root=psc.run_as_non_root,
-        fs_group=psc.fs_group,
-        seccomp_profile=seccomp,
-    )
-
-
-def _build_tolerations(
-    spec: AgentSpec,
-) -> list[client.V1Toleration] | None:
-    if not spec.tolerations:
-        return None
-    return [
-        client.V1Toleration(
-            key=t.key,
-            operator=t.operator,
-            value=t.value,
-            effect=t.effect,
-            toleration_seconds=t.toleration_seconds,
-        )
-        for t in spec.tolerations
-    ]
-
-
 # ── Skills ConfigMap lifecycle ────────────────────────────────────────────────
 
 
-def ensure_skills_cm(
-    agent_name: str, namespace: str, spec: AgentSpec, body: dict
+def ensure_agent_skills_cm(
+    name: str, namespace: str, spec: AgentSpec, body: dict
 ) -> bool:
     """Create/update a ConfigMap for inline skills. Returns True if it exists."""
     items = (spec.skills.items if spec.skills else None) or []
     inline = {s.name: s.content for s in items if s.content}
 
     if not inline:
-        _delete_skills_cm(agent_name, namespace)
+        _delete_skills_cm(name, namespace)
         return False
 
-    cm_name = _skills_cm_name(agent_name)
+    cm_name = _skills_cm_name(name)
     cm = client.V1ConfigMap(
         metadata=client.V1ObjectMeta(
             name=cm_name,
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "agent", "agent": agent_name},
+            labels={"app.kubernetes.io/name": "agent", "agent": name},
         ),
         data={f"{k}.md": v for k, v in inline.items()},
     )
@@ -374,44 +234,41 @@ def ensure_skills_cm(
     return True
 
 
-def _delete_skills_cm(agent_name: str, namespace: str) -> None:
+def _delete_skills_cm(name: str, namespace: str) -> None:
     try:
         client.CoreV1Api().delete_namespaced_config_map(
-            _skills_cm_name(agent_name), namespace
+            _skills_cm_name(name), namespace
         )
     except ApiException as e:
         if e.status != 404:
             raise
 
 
-# ── Shared pod template builder ──────────────────────────────────────────────
-
-CLI_COMMAND = ["python", "app/cli.py"]
+# ── Agent pod template builder ───────────────────────────────────────────────
 
 
-def _build_pod_template_spec(
+def _build_agent_pod_template(
     name: str,
     spec: AgentSpec,
     has_inline_cm: bool,
     *,
     command: list[str] | None = None,
-    extra_env: list[client.V1EnvVar] | None = None,
+    extra_env_vars: list[client.V1EnvVar] | None = None,
     restart_policy: str | None = None,
 ) -> client.V1PodTemplateSpec:
-    """Build a PodTemplateSpec shared by Deployment, Job, and CronJob."""
     workspace = spec.workspace or WorkspaceConfig()
     ws_path, ws_vol = _workspace_volume(workspace)
     sk_vols, sk_mounts = _skills_volumes(name, spec, has_inline_cm)
 
-    env = _build_env_vars(spec, name, has_inline_cm)
-    if extra_env:
-        env = [*env, *extra_env]
+    env = _build_agent_env(spec, name, has_inline_cm)
+    if extra_env_vars:
+        env = [*env, *extra_env_vars]
 
     ports = None if command else [client.V1ContainerPort(container_port=80)]
 
     container = client.V1Container(
         name="agent",
-        image=(spec.image or "").strip() or DEFAULT_IMAGE,
+        image=(spec.image or "").strip() or DEFAULT_AGENT_IMAGE,
         image_pull_policy=(spec.image_pull_policy or "").strip() or DEFAULT_PULL_POLICY,
         command=command,
         env=env,
@@ -420,8 +277,8 @@ def _build_pod_template_spec(
             client.V1VolumeMount(name=WORKSPACE_VOL, mount_path=ws_path),
             *sk_mounts,
         ],
-        resources=_build_resources(spec),
-        security_context=_build_container_sc(spec),
+        resources=build_resources(spec),
+        security_context=build_container_sc(spec),
     )
 
     return client.V1PodTemplateSpec(
@@ -430,29 +287,29 @@ def _build_pod_template_spec(
             containers=[container],
             volumes=[ws_vol, *sk_vols],
             restart_policy=restart_policy,
-            security_context=_build_pod_sc(spec),
+            security_context=build_pod_sc(spec),
             node_selector=spec.node_selector,
-            tolerations=_build_tolerations(spec),
+            tolerations=build_tolerations(spec),
             service_account_name=(spec.service_account_name or "").strip() or None,
         ),
     )
 
 
-# ── Resource builders ────────────────────────────────────────────────────────
+# ── Agent resource builders ─────────────────────────────────────────────────
 
 
-def build_deployment(
+def build_agent_deployment(
     name: str,
     namespace: str,
     spec: AgentSpec,
     body: dict,
     has_inline_cm: bool,
 ) -> client.V1Deployment:
-    template = _build_pod_template_spec(name, spec, has_inline_cm)
+    template = _build_agent_pod_template(name, spec, has_inline_cm)
 
     deployment = client.V1Deployment(
         metadata=client.V1ObjectMeta(
-            name=deployment_name(name),
+            name=agent_deployment_name(name),
             namespace=namespace,
             labels={"app.kubernetes.io/name": "agent", "agent": name},
         ),
@@ -467,14 +324,7 @@ def build_deployment(
     return deployment
 
 
-def _trigger_env(trigger: TriggerConfig) -> list[client.V1EnvVar]:
-    env: list[client.V1EnvVar] = []
-    if trigger.query:
-        env.append(client.V1EnvVar(name="AGENT_QUERY", value=trigger.query))
-    return env
-
-
-def build_job(
+def build_agent_job(
     name: str,
     namespace: str,
     spec: AgentSpec,
@@ -482,18 +332,18 @@ def build_job(
     has_inline_cm: bool,
 ) -> client.V1Job:
     trigger = spec.trigger or TriggerConfig()
-    template = _build_pod_template_spec(
+    template = _build_agent_pod_template(
         name,
         spec,
         has_inline_cm,
         command=CLI_COMMAND,
-        extra_env=_trigger_env(trigger),
+        extra_env_vars=trigger_env(trigger.query),
         restart_policy="Never",
     )
 
     job = client.V1Job(
         metadata=client.V1ObjectMeta(
-            name=job_name(name),
+            name=agent_job_name(name),
             namespace=namespace,
             labels={"app.kubernetes.io/name": "agent", "agent": name},
         ),
@@ -507,7 +357,7 @@ def build_job(
     return job
 
 
-def build_cronjob(
+def build_agent_cronjob(
     name: str,
     namespace: str,
     spec: AgentSpec,
@@ -515,18 +365,18 @@ def build_cronjob(
     has_inline_cm: bool,
 ) -> client.V1CronJob:
     trigger = spec.trigger or TriggerConfig()
-    template = _build_pod_template_spec(
+    template = _build_agent_pod_template(
         name,
         spec,
         has_inline_cm,
         command=CLI_COMMAND,
-        extra_env=_trigger_env(trigger),
+        extra_env_vars=trigger_env(trigger.query),
         restart_policy="Never",
     )
 
     cronjob = client.V1CronJob(
         metadata=client.V1ObjectMeta(
-            name=cronjob_name(name),
+            name=agent_cronjob_name(name),
             namespace=namespace,
             labels={"app.kubernetes.io/name": "agent", "agent": name},
         ),
@@ -544,3 +394,46 @@ def build_cronjob(
     )
     kopf.append_owner_reference(cronjob, body)
     return cronjob
+
+
+# ── Agent Service ────────────────────────────────────────────────────────────
+
+
+def _build_agent_service(name: str, namespace: str, body: dict) -> client.V1Service:
+    svc = client.V1Service(
+        metadata=client.V1ObjectMeta(
+            name=agent_service_name(name),
+            namespace=namespace,
+            labels={"app.kubernetes.io/name": "agent", "agent": name},
+        ),
+        spec=client.V1ServiceSpec(
+            selector={"agent": name},
+            ports=[client.V1ServicePort(port=80, target_port=80)],
+        ),
+    )
+    kopf.append_owner_reference(svc, body)
+    return svc
+
+
+def ensure_agent_service(name: str, namespace: str, body: dict) -> None:
+    svc = _build_agent_service(name, namespace, body)
+    svc_name = svc.metadata.name
+    core = client.CoreV1Api()
+    try:
+        core.read_namespaced_service(svc_name, namespace)
+        core.patch_namespaced_service(svc_name, namespace, svc)
+    except ApiException as e:
+        if e.status == 404:
+            core.create_namespaced_service(namespace, svc)
+        else:
+            raise
+
+
+def delete_agent_service(name: str, namespace: str) -> None:
+    try:
+        client.CoreV1Api().delete_namespaced_service(
+            agent_service_name(name), namespace
+        )
+    except ApiException as e:
+        if e.status != 404:
+            raise

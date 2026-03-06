@@ -6,7 +6,7 @@ metadata:
   namespace: agentickube-ns
 ---
 # --- Cluster-wide permissions for the operator (required when using --all-namespaces)
-# The default image runs with --all-namespaces, so it needs cluster-scoped list/watch on agents.
+# The default image runs with --all-namespaces, so it needs cluster-scoped list/watch on agents and orchestrators.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -20,15 +20,35 @@ rules:
   - apiGroups: ["ai.juliusharing.com"]
     resources: ["agents"]
     verbs: ["get", "list", "watch", "patch", "update"]
-  # Create/update/patch/delete Deployments owned by Agent CRs (in any namespace)
+  # Watch and reconcile Orchestrator CRs in all namespaces
+  - apiGroups: ["ai.juliusharing.com"]
+    resources: ["orchestrators"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  # Create/update/patch/delete Deployments owned by Agent/Orchestrator CRs
   - apiGroups: ["apps"]
     resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Create/update/patch/delete Jobs owned by Agent/Orchestrator CRs
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Create/update/patch/delete CronJobs owned by Agent/Orchestrator CRs
+  - apiGroups: ["batch"]
+    resources: ["cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Create/update/patch/delete Services for Agent/Orchestrator Deployments
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Create/update/patch/delete ConfigMaps for inline skills
+  - apiGroups: [""]
+    resources: ["configmaps"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
   # Kopf and GC need to see Pods (owner references, status)
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
-  # Emit events on Agent CRs (optional; helps with kubectl describe agent/...)
+  # Emit events on Agent/Orchestrator CRs (optional; helps with kubectl describe)
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "patch"]
@@ -55,10 +75,16 @@ subjects:
 #   namespace: agentickube-ns
 # rules:
 #   - apiGroups: ["ai.juliusharing.com"]
-#     resources: ["agents"]
+#     resources: ["agents", "orchestrators"]
 #     verbs: ["get", "list", "watch"]
 #   - apiGroups: ["apps"]
 #     resources: ["deployments"]
+#     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+#   - apiGroups: ["batch"]
+#     resources: ["jobs", "cronjobs"]
+#     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+#   - apiGroups: [""]
+#     resources: ["services", "configmaps"]
 #     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 #   - apiGroups: [""]
 #     resources: ["pods"]
@@ -81,19 +107,18 @@ subjects:
 #     name: agent-operator
 #     namespace: agentickube-ns
 ---
-# --- Optional: who can manage Agent CRs (create/update/delete agents)
-# Bind this ClusterRole to users/groups to restrict who can kubectl apply/delete Agent CRs.
-# Example: bind to a group "agent-editors" or a specific user.
+# --- Optional: who can manage Agent and Orchestrator CRs (create/update/delete)
+# Bind this ClusterRole to users/groups to restrict who can kubectl apply/delete CRs.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: agent-cr-editor
 rules:
   - apiGroups: ["ai.juliusharing.com"]
-    resources: ["agents"]
+    resources: ["agents", "orchestrators"]
     verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
 ---
-# Example: allow all authenticated users in the cluster to edit Agent CRs (relaxed).
+# Example: allow all authenticated users in the cluster to edit Agent/Orchestrator CRs (relaxed).
 # Replace with a more restrictive RoleBinding (e.g. to a group or single user) as needed.
 # apiVersion: rbac.authorization.k8s.io/v1
 # kind: ClusterRoleBinding
@@ -109,10 +134,10 @@ rules:
 #     name: system:authenticated
 
 ---
-# --- Who can query agents: discover Agent CRs and reach agent pods (e.g. port-forward)
-# No create/update/delete on Agent CRs; no create/delete on Deployments or Pods.
-# Bind agent-querier Role to users/groups who may only call the agent HTTP API (POST /query).
-# Note: the agent app itself has no HTTP auth; for "who can call /query" use API keys or
+# --- Who can query agents/orchestrators: discover CRs and reach pods (e.g. port-forward)
+# No create/update/delete on CRs; no create/delete on Deployments or Pods.
+# Bind agent-querier Role to users/groups who may only call the HTTP API (POST /query).
+# Note: the apps have no HTTP auth; for "who can call /query" use API keys or
 # an Ingress/gateway with auth in addition to this RBAC.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -120,19 +145,19 @@ metadata:
   name: agent-querier
   namespace: agentickube-ns
 rules:
-  # Discover which agents exist (names, spec summary)
+  # Discover which agents and orchestrators exist (names, spec summary)
   - apiGroups: ["ai.juliusharing.com"]
-    resources: ["agents"]
+    resources: ["agents", "orchestrators"]
     verbs: ["get", "list", "watch"]
-  # See agent pods (to port-forward or hit from in-cluster)
+  # See pods (to port-forward or hit from in-cluster)
   - apiGroups: [""]
     resources: ["pods"]
     verbs: ["get", "list", "watch"]
-  # Port-forward to agent pod: kubectl port-forward pod/agent-my-agent-xxx 8080:80
+  # Port-forward to agent/orchestrator pod
   - apiGroups: [""]
     resources: ["pods/portforward"]
     verbs: ["create"]
-  # If you expose agents via Service, allow reading so queriers can use them
+  # Read Services
   - apiGroups: [""]
     resources: ["services"]
     verbs: ["get", "list", "watch"]

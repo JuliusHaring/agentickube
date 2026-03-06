@@ -3,8 +3,7 @@ version: '3'
 tasks:
   run: watchmedo auto-restart --patterns "*.py" -d code/operator  -- env PYTHONPATH=code kopf run code/operator/main.py --namespace=agentickube-ns --verbose
 
-  # Generate CRD + example Agent manifests from models (single place; CI/CD run this task too).
   generate:
     cmds:
-      - PYTHONPATH=code/operator python code/operator/crd_gen.py -o deploy/crd.yaml
-      - PYTHONPATH=code/operator python code/operator/agent_examples_gen.py
+      - PYTHONPATH=code/operator python code/operator/crd_gen.py
+      - PYTHONPATH=code/operator python code/operator/examples_gen.py

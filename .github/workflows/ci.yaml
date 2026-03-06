@@ -46,7 +46,7 @@ jobs:
       - name: Install generator dependencies
         run: pip install -r environments/shared-requirements.txt
 
-      - name: Generate CRD and Agent examples from models
+      - name: Generate CRDs and examples from models
         run: task operator:generate
 
       - name: Set up Kubeconform

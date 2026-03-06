@@ -1,14 +1,51 @@
-import json
-import uuid
+"""Session and history for the agent. Uses shared.session for storage and validation."""
+
 from pathlib import Path
 
 from fastapi import HTTPException
-from pydantic import BaseModel
 
 from config import agent_config
+from shared.session import (
+    HistoryMessage,
+    history_prompt as _history_prompt_shared,
+    load_history as _load_history_shared,
+    save_history as _save_history_shared,
+    validate_session_id as _validate_session_id,
+)
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def get_session_id(session_id: str | None) -> str | None:
+    """Resolve session_id for API use. Raises HTTPException 400 if invalid."""
+    try:
+        return _validate_session_id(
+            session_id, memory_enabled=agent_config.conversation_memory_enabled
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+def session_dir() -> Path:
+    return Path(agent_config.workspace_dir) / "sessions"
+
+
+def session_path(session_id: str) -> Path | None:
+    sid = get_session_id(session_id)
+    return session_dir() / f"{sid}.json" if sid else None
+
+
+def load_history(session_id: str) -> list[HistoryMessage]:
+    return _load_history_shared(agent_config.workspace_dir, session_id, logger=logger)
+
+
+def save_history(session_id: str, history: list[HistoryMessage]) -> None:
+    _save_history_shared(agent_config.workspace_dir, session_id, history)
+
+
+def history_prompt(history: list[HistoryMessage]) -> str:
+    return _history_prompt_shared(history, include_steps=True)
 
 
 def extract_steps_from_run(result) -> list[dict]:
@@ -18,7 +55,7 @@ def extract_steps_from_run(result) -> list[dict]:
         messages = result.new_messages()
     except Exception:
         return steps
-    pending_calls: list[tuple[str, dict]] = []  # (tool_name, args)
+    pending_calls: list[tuple[str, dict]] = []
     for msg in messages:
         parts = getattr(msg, "parts", None) or []
         for part in parts:
@@ -42,86 +79,3 @@ def extract_steps_from_run(result) -> list[dict]:
                         {"tool": tool_name, "args": tool_args, "result": result_str}
                     )
     return steps
-
-
-def get_session_id(session_id: str | None) -> str | None:
-    """Get session_id for API use. Raises HTTPException 400 if invalid.
-
-    - session_id is only allowed when conversation memory is enabled.
-    - When provided, session_id must be a valid UUID.
-    - If not provided, generate a new session_id.
-    """
-    if not agent_config.conversation_memory_enabled:
-        raise HTTPException(
-            status_code=400,
-            detail="session_id is only allowed when conversation memory is enabled (spec.conversation.enabled)",
-        )
-    if not session_id or session_id.strip() == "":
-        return uuid.uuid4().hex
-    try:
-        return str(uuid.UUID(session_id.strip()))
-    except (ValueError, TypeError, AttributeError):
-        raise HTTPException(
-            status_code=400,
-            detail="session_id must be a valid UUID",
-        )
-
-
-class HistoryMessage(BaseModel):
-    role: str  # "user" | "assistant"
-    content: str
-    steps: list[dict] | None = None
-    """Optional intermediate steps for assistant turns: list of {"tool": str, "args": dict, "result": str}."""
-
-
-def session_dir() -> Path:
-    return Path(agent_config.workspace_dir) / "sessions"
-
-
-def session_path(session_id: str) -> Path | None:
-    sid = get_session_id(session_id)
-    return session_dir() / f"{sid}.json" if sid else None
-
-
-def load_history(session_id: str) -> list[HistoryMessage]:
-    path = session_path(session_id)
-    if not path or not path.is_file():
-        return []
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-        return [HistoryMessage(**item) for item in data]
-    except Exception as e:
-        logger.warning("Failed to load session history %s: %s", session_id, e)
-        return []
-
-
-def save_history(session_id: str, history: list[HistoryMessage]) -> None:
-    path = session_path(session_id)
-    if not path:
-        return
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(
-        json.dumps([m.model_dump() for m in history], indent=0),
-        encoding="utf-8",
-    )
-
-
-def history_prompt(history: list[HistoryMessage]) -> str:
-    if not history:
-        return ""
-    lines = ["# Conversation so far\n"]
-    for m in history:
-        if m.role == "user":
-            lines.append(f"User: {m.content}")
-        else:
-            if m.steps:
-                for s in m.steps:
-                    tool = s.get("tool", "?")
-                    args = s.get("args") or {}
-                    result = s.get("result", "")
-                    args_str = ", ".join(f"{k}={v!r}" for k, v in args.items())
-                    lines.append(
-                        f"  [tool] {tool}({args_str}) -> {result[:200]}{'...' if len(result) > 200 else ''}"
-                    )
-            lines.append(f"Assistant: {m.content}")
-    return "\n".join(lines)

@@ -1,0 +1,20 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Orchestrator
+metadata:
+  name: example-sequence-job
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''
+  agents:
+  - name: researcher
+  - name: summarizer
+  strategy:
+    type: sequence
+    maxRounds: 10
+  trigger:
+    type: job
+    query: Research and summarize latest security advisories
+    backoffLimit: 2
+    ttlSecondsAfterFinished: 300

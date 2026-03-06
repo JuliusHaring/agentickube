@@ -28,6 +28,9 @@ spec:
               imagePullPolicy:
                 type: string
                 nullable: true
+              description:
+                type: string
+                nullable: true
               llm:
                 properties:
                   provider:

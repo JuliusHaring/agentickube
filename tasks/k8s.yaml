@@ -7,6 +7,7 @@ tasks:
 
   init-ns: 
     - kubectl delete agent --all -n agentickube-ns
+    - kubectl delete orchestrator --all -n agentickube-ns
     - kubectl delete deployment --all -n agentickube-ns
     - kubectl delete replicaset --all -n agentickube-ns
     - kubectl delete pod --all -n agentickube-ns
@@ -22,22 +23,15 @@ tasks:
     - kubectl delete cronjob --all -n agentickube-ns
     - kubectl delete job --all -n agentickube-ns
 
-  apply-crd: kubectl apply -f deploy/crd.yaml
+  apply-crd:
+    - kubectl apply -f deploy/agent-crd.yaml
+    - kubectl apply -f deploy/orchestrator-crd.yaml
 
   apply-operator: kubectl apply -f deploy/operator.yaml
 
   apply-rbac: kubectl apply -f deploy/example-rbac.yaml
 
-  apply-ollama: kubectl apply -f manifests/ollama.yaml
-
-  apply-otel: kubectl apply -f manifests/otel.yaml
-
-  apply-agent: kubectl apply -f manifests/agent.yaml
-
-  apply-manifests:
-    - task: apply-ollama
-    - task: apply-otel
-    - task: apply-agent
+  apply-manifests: kubectl apply -f manifests/
 
   apply-all:
     - task: apply-crd

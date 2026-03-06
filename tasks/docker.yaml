@@ -5,6 +5,9 @@ tasks:
 
   build-operator: docker build . -f ./code/operator/Dockerfile -t agentickube-operator
 
+  build-orchestrator: docker build . -f ./code/orchestrator/Dockerfile -t agentickube-orchestrator
+
   build-all:
     - task: build-agent
     - task: build-operator
+    - task: build-orchestrator
