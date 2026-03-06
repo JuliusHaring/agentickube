@@ -2,7 +2,7 @@ from config import agent_config
 from logic.skills import load_skills
 
 
-def instructions() -> str:
+def agent_instructions() -> str:
     """Base system instructions, without dynamic skills."""
     prompt = (
         "You have tools available. Use them when the task requires it, then respond "

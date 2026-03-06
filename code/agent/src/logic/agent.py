@@ -4,7 +4,7 @@ from logic.history import get_history, history_to_model_messages, record_turn
 from logic.sessions import extract_steps_from_run
 from config import agent_config
 from logic.providers import get_model
-from logic.prompt import instructions, skills_prompt
+from logic.prompt import agent_instructions, skills_prompt
 from logic.tools import assemble_toolsets
 from shared.logging import get_logger
 
@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 def _build_agent() -> Agent:
     return Agent(
         model=get_model(),
-        instructions=instructions(),
+        instructions=agent_instructions(),
         toolsets=assemble_toolsets(),
         retries=3,
     )
@@ -31,15 +31,13 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
 
     try:
         skills = skills_prompt()
-        logger.info(f"Skills: {skills}")
+        logger.info("Skills loaded for context (not in user prompt)")
 
         message_history = history_to_model_messages(history)
-        user_content_parts = [p for p in [skills, query] if p]
-        user_prompt = "\n\n".join(user_content_parts)
-
         res = _build_agent().run_sync(
-            user_prompt=user_prompt,
+            user_prompt=query,
             message_history=message_history or None,
+            instructions=skills if skills else None,
         )
         output = res.output
 
