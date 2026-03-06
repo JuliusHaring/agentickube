@@ -34,6 +34,10 @@ ORCHESTRATOR_PREFIX = "orchestrator-"
 
 DEFAULT_ORCHESTRATOR_IMAGE = "ghcr.io/juliusharing/agentickube/orchestrator:latest"
 
+# Recommended labels (https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/)
+APP_PART_OF = "agentickube"
+APP_MANAGED_BY = "agentickube-operator"
+
 
 # ── Naming ───────────────────────────────────────────────────────────────────
 
@@ -52,6 +56,17 @@ def orchestrator_cronjob_name(name: str) -> str:
 
 def orchestrator_service_name(name: str) -> str:
     return f"{ORCHESTRATOR_PREFIX}{name}"
+
+
+def _orchestrator_recommended_labels(name: str) -> dict[str, str]:
+    """Recommended labels for Orchestrator-created resources (Deployment, Job, CronJob, Service, Pod)."""
+    return {
+        "app.kubernetes.io/name": "orchestrator",
+        "app.kubernetes.io/instance": orchestrator_deployment_name(name),
+        "app.kubernetes.io/part-of": APP_PART_OF,
+        "app.kubernetes.io/managed-by": APP_MANAGED_BY,
+        "orchestrator": name,
+    }
 
 
 # ── Orchestrator-specific environment variable builders ──────────────────────
@@ -134,7 +149,7 @@ def _build_orchestrator_pod_template(
     )
 
     return client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(labels={"orchestrator": name}),
+        metadata=client.V1ObjectMeta(labels=_orchestrator_recommended_labels(name)),
         spec=client.V1PodSpec(
             containers=[container],
             restart_policy=restart_policy,
@@ -161,7 +176,7 @@ def build_orchestrator_deployment(
         metadata=client.V1ObjectMeta(
             name=orchestrator_deployment_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "orchestrator", "orchestrator": name},
+            labels=_orchestrator_recommended_labels(name),
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
@@ -194,7 +209,7 @@ def build_orchestrator_job(
         metadata=client.V1ObjectMeta(
             name=orchestrator_job_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "orchestrator", "orchestrator": name},
+            labels=_orchestrator_recommended_labels(name),
         ),
         spec=client.V1JobSpec(
             template=template,
@@ -226,7 +241,7 @@ def build_orchestrator_cronjob(
         metadata=client.V1ObjectMeta(
             name=orchestrator_cronjob_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "orchestrator", "orchestrator": name},
+            labels=_orchestrator_recommended_labels(name),
         ),
         spec=client.V1CronJobSpec(
             schedule=trigger.schedule or "0 * * * *",
@@ -254,7 +269,7 @@ def _build_orchestrator_service(
         metadata=client.V1ObjectMeta(
             name=orchestrator_service_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "orchestrator", "orchestrator": name},
+            labels=_orchestrator_recommended_labels(name),
         ),
         spec=client.V1ServiceSpec(
             selector={"orchestrator": name},

@@ -40,6 +40,10 @@ SKILLS_MOUNT = "/skills/bootstrap"
 
 DEFAULT_AGENT_IMAGE = "ghcr.io/juliusharing/agentickube/agent:latest"
 
+# Recommended labels (https://kubernetes.io/docs/concepts/overview/working-with-objects/common-labels/)
+APP_PART_OF = "agentickube"
+APP_MANAGED_BY = "agentickube-operator"
+
 
 # ── Naming ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +66,17 @@ def agent_service_name(name: str) -> str:
 
 def _skills_cm_name(name: str) -> str:
     return f"agent-{name}-skills"
+
+
+def _agent_recommended_labels(name: str) -> dict[str, str]:
+    """Recommended labels for Agent-created resources (Deployment, Job, CronJob, Service, Pod)."""
+    return {
+        "app.kubernetes.io/name": "agent",
+        "app.kubernetes.io/instance": agent_deployment_name(name),
+        "app.kubernetes.io/part-of": APP_PART_OF,
+        "app.kubernetes.io/managed-by": APP_MANAGED_BY,
+        "agent": name,
+    }
 
 
 # ── Agent-specific environment variable builders ─────────────────────────────
@@ -271,7 +286,7 @@ def _build_agent_pod_template(
     )
 
     return client.V1PodTemplateSpec(
-        metadata=client.V1ObjectMeta(labels={"agent": name}),
+        metadata=client.V1ObjectMeta(labels=_agent_recommended_labels(name)),
         spec=client.V1PodSpec(
             containers=[container],
             volumes=[ws_vol, *sk_vols],
@@ -300,7 +315,7 @@ def build_agent_deployment(
         metadata=client.V1ObjectMeta(
             name=agent_deployment_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "agent", "agent": name},
+            labels=_agent_recommended_labels(name),
         ),
         spec=client.V1DeploymentSpec(
             replicas=1,
@@ -334,7 +349,7 @@ def build_agent_job(
         metadata=client.V1ObjectMeta(
             name=agent_job_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "agent", "agent": name},
+            labels=_agent_recommended_labels(name),
         ),
         spec=client.V1JobSpec(
             template=template,
@@ -367,7 +382,7 @@ def build_agent_cronjob(
         metadata=client.V1ObjectMeta(
             name=agent_cronjob_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "agent", "agent": name},
+            labels=_agent_recommended_labels(name),
         ),
         spec=client.V1CronJobSpec(
             schedule=trigger.schedule or "0 * * * *",
@@ -393,7 +408,7 @@ def _build_agent_service(name: str, namespace: str, body: dict) -> client.V1Serv
         metadata=client.V1ObjectMeta(
             name=agent_service_name(name),
             namespace=namespace,
-            labels={"app.kubernetes.io/name": "agent", "agent": name},
+            labels=_agent_recommended_labels(name),
         ),
         spec=client.V1ServiceSpec(
             selector={"agent": name},

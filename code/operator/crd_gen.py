@@ -130,6 +130,10 @@ def _build_openapi_schema(spec_cls: Type[BaseModel], description: str) -> dict:
     return root
 
 
+# Recommended labels for CRDs (align with operator-created resources)
+_CRD_LABELS_PART_OF = "agentickube"
+
+
 def _crd_document(
     openapi_schema: dict,
     *,
@@ -144,7 +148,13 @@ def _crd_document(
     return {
         "apiVersion": "apiextensions.k8s.io/v1",
         "kind": "CustomResourceDefinition",
-        "metadata": {"name": crd_name},
+        "metadata": {
+            "name": crd_name,
+            "labels": {
+                "app.kubernetes.io/name": plural,
+                "app.kubernetes.io/part-of": _CRD_LABELS_PART_OF,
+            },
+        },
         "spec": {
             "group": group,
             "scope": "Namespaced",

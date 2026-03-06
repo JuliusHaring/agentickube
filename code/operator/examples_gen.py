@@ -4,7 +4,11 @@ Pydantic models (single source of truth).
 
 Usage (from repo root):
   PYTHONPATH=code/operator python code/operator/examples_gen.py
-  task operator:generate-examples
+  task operator:generate
+
+Naming: CR metadata.name and AgentRef.name must be DNS-1123 subdomains (lowercase,
+alphanumeric and hyphens only); the operator creates Deployment/Service names
+agent-<name> and orchestrator-<name>, so names like "example", "my-agent" are valid.
 """
 
 from __future__ import annotations
@@ -200,45 +204,6 @@ spec:
   resources:
     requests:
       storage: 1Gi
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: agent-workspace-init
-spec:
-  ttlSecondsAfterFinished: 300
-  backoffLimit: 2
-  template:
-    spec:
-      restartPolicy: OnFailure
-      containers:
-        - name: init
-          image: busybox:1.36
-          command:
-            - sh
-            - -c
-            - |
-              set -e
-              mkdir -p /workspace
-              cat > /workspace/ws.txt << 'EOF'
-              To be, or not to be, that is the question:
-              Whether 'tis nobler in the mind to suffer
-              The slings and arrows of outrageous fortune,
-              Or to take arms against a sea of troubles
-              And by opposing end them.
-              — Shakespeare, Hamlet
-              EOF
-              cat > /workspace/eh.txt << 'EOF'
-              In the late summer of that year we lived in a house in a village that looked across the river and the plain to the mountains.
-              — Hemingway, A Farewell to Arms
-              EOF
-          volumeMounts:
-            - name: workspace
-              mountPath: /workspace
-      volumes:
-        - name: workspace
-          persistentVolumeClaim:
-            claimName: agent-workspace-pvc
 """
 
 
@@ -249,9 +214,7 @@ def main() -> int:
         print("PyYAML required: pip install pyyaml", file=sys.stderr)
         return 1
 
-    gen_comment = (
-        "Generated from code/operator/models.py - task operator:generate-examples"
-    )
+    gen_comment = "Generated from code/operator/models.py - task operator:generate"
 
     deploy_dir = _repo_root / "deploy"
     deploy_dir.mkdir(parents=True, exist_ok=True)
