@@ -2,6 +2,37 @@
 
 <!-- version list -->
 
+## v2.1.0 (2026-03-06)
+
+### Bug Fixes
+
+- Make provider use correct env var in operator
+  ([`b86d9bd`](https://github.com/JuliusHaring/agentickube/commit/b86d9bd4fd11a977238e7cf8b027b0d98c589430))
+
+### Chores
+
+- Add recommended labels for kubernetes
+  ([`ed2514a`](https://github.com/JuliusHaring/agentickube/commit/ed2514af9e427b0d3d489bc4f3b5aeb2ea75848e))
+
+- Rename council to team
+  ([`5eaecdc`](https://github.com/JuliusHaring/agentickube/commit/5eaecdc0710999e5ec64366489d98b9ac2f673a4))
+
+### Continuous Integration
+
+- Build images in matrix
+  ([`59a1fdb`](https://github.com/JuliusHaring/agentickube/commit/59a1fdbbb3aff65706b45d719da1850385df57a9))
+
+### Documentation
+
+- Add MIT license
+  ([`0d50d3c`](https://github.com/JuliusHaring/agentickube/commit/0d50d3ca6b0171054749343b57a955b55cb51982))
+
+### Features
+
+- Add otel to orchestrator
+  ([`eef8f8a`](https://github.com/JuliusHaring/agentickube/commit/eef8f8ab1bbb2edd80783eb3aa8f6f5dd0e8011e))
+
+
 ## v2.0.0 (2026-03-06)
 
 ### Bug Fixes
