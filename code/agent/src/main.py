@@ -10,14 +10,14 @@ from routes import query_router
 from logic.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
 
-logging.config.dictConfig(LOGGING_CONFIG)
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    logging.config.dictConfig(LOGGING_CONFIG)
+
     seed_workspace_skills()
-    logger.info("Application startup complete")
     yield
 
 

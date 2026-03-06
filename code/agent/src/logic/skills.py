@@ -143,12 +143,14 @@ def seed_workspace_skills(
     """
     skills_dir = Path(workspace_dir) / "skills"
     skills_dir.mkdir(parents=True, exist_ok=True)
+    logger.info(f"Seeding skills into {skills_dir}")
 
-    # Compute builtin filter from config (SKILLS_BUILTINS env var).
+    # 0. Seed built-in skills from the image directory (filtered by SKILLS_BUILTINS).
     builtin_filter: list[str] | None = None
     if agent_config.skills_builtins is not None:
         raw = agent_config.skills_builtins.strip()
         builtin_filter = [s.strip() for s in raw.split(",") if s.strip()] if raw else []
+    logger.info(f"Builtin filter: {builtin_filter}")
 
     # 1. Seed built-in skills from the image directory.
     builtin_root = Path(builtin_dir)
