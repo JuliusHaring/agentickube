@@ -127,65 +127,46 @@ def _load_from(
     return contents
 
 
-def seed_workspace_skills(
-    builtin_dir: str = agent_config.skills_builtin_dir,
-    bootstrap_dir: str | None = None,
+WORKSPACE_TEMPLATE_DIR = "/code/workspace"
+
+
+def sync_workspace_from_repo(
+    template_dir: str = WORKSPACE_TEMPLATE_DIR,
     workspace_dir: str = agent_config.workspace_dir,
 ) -> None:
-    """Seed all skills into {workspace}/skills/ on startup.
+    """Sync repo workspace template into the runtime workspace, then apply skills_filter.
 
-    Sources (both overwrite existing files so the image/CR stays authoritative):
-      1. Built-in skills from the image, filtered by SKILLS_BUILTINS env var.
-      2. Operator-provided bootstrap skills (flat *.md → <stem>/SKILL.md; dirs copied as-is).
-
-    After seeding, {workspace}/skills/ is the single source of truth.
-    Agent-created skills are written there directly at runtime.
+    Copies the full template (skills and any future content) into workspace_dir so
+    a PVC mount gets prefilled. If skills_filter is set, those skill dirs are
+    removed from workspace/skills/.
     """
-    skills_dir = Path(workspace_dir) / "skills"
-    skills_dir.mkdir(parents=True, exist_ok=True)
-    logger.info(f"Seeding skills into {skills_dir}")
-
-    # 0. Seed built-in skills from the image directory (filtered by SKILLS_BUILTINS).
-    builtin_filter: list[str] | None = None
-    if agent_config.skills_builtins is not None:
-        raw = agent_config.skills_builtins.strip()
-        builtin_filter = [s.strip() for s in raw.split(",") if s.strip()] if raw else []
-    logger.info(f"Builtin filter: {builtin_filter}")
-
-    # 1. Seed built-in skills from the image directory.
-    builtin_root = Path(builtin_dir)
-    if builtin_root.is_dir():
-        for child in sorted(builtin_root.iterdir()):
-            if child.is_dir() and (child / "SKILL.md").is_file():
-                if builtin_filter is not None and child.name not in builtin_filter:
-                    logger.debug(
-                        "Skipping built-in skill '%s' (filtered out)", child.name
-                    )
-                    continue
-                dest = skills_dir / child.name
-                shutil.copytree(str(child), str(dest), dirs_exist_ok=True)
-                logger.info("Seeded built-in skill '%s' into workspace", child.name)
-
-    # 2. Seed operator-provided bootstrap skills (ConfigMap-sourced).
-    if bootstrap_dir is None:
-        bootstrap_dir = agent_config.skills_bootstrap_dir
-    if not bootstrap_dir:
-        return
-    bootstrap = Path(bootstrap_dir)
-    if not bootstrap.is_dir():
-        logger.warning("Skills bootstrap dir not found: %s", bootstrap_dir)
+    template = Path(template_dir)
+    workspace = Path(workspace_dir)
+    if not template.is_dir():
+        logger.debug("No workspace template at %s, skipping sync", template_dir)
         return
 
-    for entry in sorted(bootstrap.iterdir()):
-        if entry.is_file() and entry.suffix == ".md":
-            dest = skills_dir / entry.stem / "SKILL.md"
-            dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_text(entry.read_text(encoding="utf-8"))
-            logger.info("Seeded skill '%s' from bootstrap", entry.stem)
-        elif entry.is_dir():
-            dest_dir = skills_dir / entry.name
-            shutil.copytree(str(entry), str(dest_dir), dirs_exist_ok=True)
-            logger.info("Seeded skill directory '%s' from bootstrap", entry.name)
+    workspace.mkdir(parents=True, exist_ok=True)
+    logger.info("Syncing workspace from %s into %s", template_dir, workspace_dir)
+
+    for child in sorted(template.iterdir()):
+        if child.name.startswith("."):
+            continue
+        dest = workspace / child.name
+        if child.is_dir():
+            shutil.copytree(str(child), str(dest), dirs_exist_ok=True)
+        else:
+            shutil.copy2(str(child), str(dest))
+
+    # Remove skills listed in skills_filter.
+    skills_dir = workspace / "skills"
+    filter_names = agent_config.skills_filter or []
+    if filter_names and skills_dir.is_dir():
+        for name in filter_names:
+            path = skills_dir / name
+            if path.is_dir():
+                shutil.rmtree(path)
+                logger.info("Removed skill '%s' (skills_filter)", name)
 
 
 def load_skills() -> list[str]:

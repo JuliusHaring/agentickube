@@ -12,9 +12,10 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY code/agent/src /code/app
 COPY code/shared /code/app/shared
-COPY code/agent/workspace /workspace
+# Repo workspace template; agent startup syncs this into the mounted /workspace.
+COPY code/agent/workspace /code/workspace
 
-RUN rm /workspace/.gitignore
+RUN rm /code/workspace/.gitignore
 
 ENV PYTHONPATH=/code:/code/app
 

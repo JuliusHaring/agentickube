@@ -5,7 +5,7 @@ import uvicorn
 from fastapi import FastAPI
 
 from config import agent_config
-from logic.skills import seed_workspace_skills
+from logic.skills import sync_workspace_from_repo
 from routes import query_router
 from logic.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     logging.config.dictConfig(LOGGING_CONFIG)
 
-    seed_workspace_skills()
+    sync_workspace_from_repo()
     yield
 
 

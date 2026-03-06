@@ -75,7 +75,13 @@ spec:
                 type: array
                 nullable: true
               skills:
+                description: 'Skill configuration. skills_filter: names to remove from workspace/skills/.'
                 properties:
+                  skillsFilter:
+                    items:
+                      type: string
+                    type: array
+                    nullable: true
                   builtinSkills:
                     items:
                       type: string

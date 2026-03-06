@@ -92,21 +92,10 @@ def _skills_env(
     skills: SkillsConfig | None, has_inline_cm: bool
 ) -> list[client.V1EnvVar]:
     skills = skills or SkillsConfig()
-    items = skills.items or []
     env: list[client.V1EnvVar] = []
-
-    bootstrap_cm = skills.bootstrap.config_map_ref if skills.bootstrap else None
-    has_cm_folder = bootstrap_cm is not None and bootstrap_cm.name is not None
-    has_item_refs = any(s.config_map_ref for s in items)
-
-    if has_inline_cm or has_cm_folder or has_item_refs:
-        env.append(client.V1EnvVar(name="SKILLS_BOOTSTRAP_DIR", value=SKILLS_MOUNT))
-
-    if skills.builtin_skills is not None:
+    if skills.skills_filter:
         env.append(
-            client.V1EnvVar(
-                name="SKILLS_BUILTINS", value=",".join(skills.builtin_skills)
-            )
+            client.V1EnvVar(name="SKILLS_FILTER", value=",".join(skills.skills_filter))
         )
     return env
 
