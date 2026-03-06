@@ -7,7 +7,7 @@
 
 **Try it:** peek at the [Agent CRD](deploy/agent-crd.yaml), [Orchestrator CRD](deploy/orchestrator-crd.yaml), and [example Agent](deploy/example-agent.yaml), then follow the install steps below.
 
-Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Optionally coordinate multiple agents with an `Orchestrator` (sequence, council, or fan-out). Your models, your cluster.
+Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Optionally coordinate multiple agents with an `Orchestrator` (currently sequence or team). Your models, your cluster.
 
 | | |
 |---|---|
@@ -15,7 +15,7 @@ Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator
 | 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
 | 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skills/SKILL.md) |
 | 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
-| 🤝 | **Orchestrator** — optional multi-agent coordination (sequence, council, fan-out) |
+| 🤝 | **Orchestrator** — optional multi-agent coordination (sequence, team) |
 | 📦 | **Zip → apply** — CRDs + operator + examples, then you're live |
 
 ## Installation

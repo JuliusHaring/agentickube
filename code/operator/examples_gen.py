@@ -178,7 +178,7 @@ def _cron_orchestrator_spec() -> OrchestratorSpec:
             AgentRef(name="analyst"),
             AgentRef(name="reporter"),
         ],
-        strategy=StrategyConfig(type="council"),
+        strategy=StrategyConfig(type="team"),
         trigger=TriggerConfig(
             type="cron",
             query="Analyze cluster health from multiple perspectives",
@@ -286,7 +286,7 @@ def main() -> int:
         ),
         (
             "example-orchestrator-cron.yaml",
-            "example-council-cron",
+            "example-team-cron",
             _cron_orchestrator_spec(),
         ),
     ]:

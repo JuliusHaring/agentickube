@@ -1,4 +1,4 @@
-"""Council strategy: an LLM moderator decides which agent to address next."""
+"""team strategy: an LLM moderator decides which agent to address next."""
 
 from pydantic_ai import Agent
 
@@ -10,7 +10,7 @@ from shared.logging import get_logger
 logger = get_logger(__name__)
 
 _MODERATOR_INSTRUCTIONS = """\
-You are a moderator coordinating a council of AI agents.
+You are a moderator coordinating a team of AI agents.
 Each agent has a specialty described below. Given the user's query and the
 conversation so far, decide which agent should respond next, until you decide that you have all the information you need and finish the query.
 
@@ -25,7 +25,7 @@ def _agent_roster(agents: list[AgentEndpoint]) -> str:
     return "Available agents:\n" + "\n".join(lines)
 
 
-async def run_council(
+async def run_team(
     query: str,
     agents: list[AgentEndpoint],
     *,
@@ -52,9 +52,7 @@ async def run_council(
         result = await moderator.run(user_prompt=prompt)
         decision = result.output.strip()
 
-        logger.info(
-            "Council round %d: moderator decided '%s'", round_num, decision[:80]
-        )
+        logger.info("team round %d: moderator decided '%s'", round_num, decision[:80])
 
         chosen = None
         if decision.upper().startswith("DONE:"):

@@ -2,7 +2,7 @@
 apiVersion: ai.juliusharing.com/v1
 kind: Orchestrator
 metadata:
-  name: example-council-cron
+  name: example-team-cron
 spec:
   llm:
     modelName: ''
@@ -12,7 +12,7 @@ spec:
   - name: analyst
   - name: reporter
   strategy:
-    type: council
+    type: team
     maxRounds: 10
   trigger:
     type: cron
