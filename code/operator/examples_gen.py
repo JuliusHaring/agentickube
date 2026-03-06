@@ -66,12 +66,6 @@ def _cr_yaml(kind: str, name: str, spec: BaseModel, comment: str | None = None) 
 # ── Agent specs ──────────────────────────────────────────────────────────────
 
 
-def _example_agent_spec() -> AgentSpec:
-    return AgentSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-    )
-
-
 def _dev_agent_spec() -> AgentSpec:
     return AgentSpec(
         image="agentickube-agent:latest",
@@ -105,40 +99,36 @@ def _dev_agent_spec() -> AgentSpec:
 
 
 def _job_agent_spec() -> AgentSpec:
-    return AgentSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-        trigger=TriggerConfig(
-            type="job",
-            query="Summarize all pods in the cluster",
-            backoff_limit=2,
-            ttl_seconds_after_finished=300,
+    base = _dev_agent_spec()
+    return base.model_copy(
+        update=dict(
+            trigger=TriggerConfig(
+                type="job",
+                query="Summarize all pods in the cluster",
+                backoff_limit=2,
+                ttl_seconds_after_finished=300,
+            ),
         ),
+        deep=True,
     )
 
 
 def _cron_agent_spec() -> AgentSpec:
-    return AgentSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-        trigger=TriggerConfig(
-            type="cron",
-            query="Check cluster health and report anomalies",
-            schedule="0 */6 * * *",
+    base = _dev_agent_spec()
+    return base.model_copy(
+        update=dict(
+            trigger=TriggerConfig(
+                type="cron",
+                query="Check cluster health and report anomalies",
+                schedule="0 */6 * * *",
+                backoff_limit=3,
+            ),
         ),
+        deep=True,
     )
 
 
 # ── Orchestrator specs ───────────────────────────────────────────────────────
-
-
-def _example_orchestrator_spec() -> OrchestratorSpec:
-    return OrchestratorSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-        agents=[
-            AgentRef(name="agent-1"),
-            AgentRef(name="agent-2"),
-        ],
-        strategy=StrategyConfig(type="sequence"),
-    )
 
 
 def _dev_orchestrator_spec() -> OrchestratorSpec:
@@ -163,43 +153,59 @@ def _dev_orchestrator_spec() -> OrchestratorSpec:
     )
 
 
-def _job_orchestrator_spec() -> OrchestratorSpec:
-    return OrchestratorSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-        agents=[
-            AgentRef(name="researcher"),
-            AgentRef(name="summarizer"),
-        ],
-        strategy=StrategyConfig(type="sequence"),
-        trigger=TriggerConfig(
-            type="job",
-            query="Research and summarize latest security advisories",
-            backoff_limit=2,
-            ttl_seconds_after_finished=300,
+def _example_orchestrator_spec() -> OrchestratorSpec:
+    """Meaningful sequence example (like manifests/orchestrator.yaml)."""
+    return _dev_orchestrator_spec().model_copy(
+        update=dict(
+            description="Example sequence orchestrator coordinating two agents",
+            agents=[
+                AgentRef(name="agent-1"),
+                AgentRef(name="agent-2"),
+            ],
         ),
+        deep=True,
+    )
+
+
+def _job_orchestrator_spec() -> OrchestratorSpec:
+    base = _dev_orchestrator_spec()
+    return base.model_copy(
+        update=dict(
+            description="One-shot research and summarize pipeline",
+            agents=[
+                AgentRef(name="researcher"),
+                AgentRef(name="summarizer"),
+            ],
+            trigger=TriggerConfig(
+                type="job",
+                query="Research and summarize latest security advisories",
+                backoff_limit=2,
+                ttl_seconds_after_finished=300,
+            ),
+        ),
+        deep=True,
     )
 
 
 def _cron_orchestrator_spec() -> OrchestratorSpec:
-    return OrchestratorSpec(
-        llm=LLMConfig(model_name="", base_url=""),
-        agents=[
-            AgentRef(name="monitor"),
-            AgentRef(name="analyst"),
-            AgentRef(name="reporter"),
-        ],
-        strategy=StrategyConfig(type="team"),
-        trigger=TriggerConfig(
-            type="cron",
-            query="Analyze cluster health from multiple perspectives",
-            schedule="0 */6 * * *",
+    base = _dev_orchestrator_spec()
+    return base.model_copy(
+        update=dict(
+            description="Scheduled team analyzing cluster health",
+            agents=[
+                AgentRef(name="monitor"),
+                AgentRef(name="analyst"),
+                AgentRef(name="reporter"),
+            ],
+            strategy=StrategyConfig(type="team", max_rounds=10),
+            trigger=TriggerConfig(
+                type="cron",
+                query="Analyze cluster health from multiple perspectives",
+                schedule="0 */6 * * *",
+                backoff_limit=3,
+            ),
         ),
-        open_telemetry=OpenTelemetryConfig(
-            enabled=True,
-            endpoint="http://otel-collector:4318",
-            service_name="my-orchestrator",
-            sampling_ratio=1.0,
-        ),
+        deep=True,
     )
 
 
@@ -233,16 +239,17 @@ def main() -> int:
     manifests_dir = _repo_root / "manifests"
     manifests_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Agent examples ───────────────────────────────────────────────────
+    # ── Agent examples (meaningful like manifests/agent.yaml) ─────────────
     for fname, name, spec in [
-        ("example-agent.yaml", "example", _example_agent_spec()),
+        ("example-agent.yaml", "example", _dev_agent_spec()),
         ("example-agent-job.yaml", "example-job", _job_agent_spec()),
         ("example-agent-cron.yaml", "example-cron", _cron_agent_spec()),
     ]:
         path = deploy_dir / fname
-        path.write_text(
-            _cr_yaml("Agent", name, spec, comment=gen_comment), encoding="utf-8"
-        )
+        body = _cr_yaml("Agent", name, spec, comment=gen_comment)
+        if fname == "example-agent.yaml":
+            body = body.rstrip() + "\n" + _MANIFESTS_AGENT_EXTRA.strip() + "\n"
+        path.write_text(body, encoding="utf-8")
         print(f"Wrote {path}", file=sys.stderr)
 
     dev_yaml = _cr_yaml("Agent", "my-agent", _dev_agent_spec())

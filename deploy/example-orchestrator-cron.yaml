@@ -4,9 +4,12 @@ kind: Orchestrator
 metadata:
   name: example-team-cron
 spec:
+  image: agentickube-orchestrator:latest
+  imagePullPolicy: Never
+  description: Scheduled team analyzing cluster health
   llm:
-    modelName: ''
-    baseUrl: ''
+    modelName: qwen3:1.7b
+    baseUrl: http://ollama:11434/v1
   agents:
   - name: monitor
   - name: analyst

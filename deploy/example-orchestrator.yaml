@@ -4,12 +4,20 @@ kind: Orchestrator
 metadata:
   name: example-sequence
 spec:
+  image: agentickube-orchestrator:latest
+  imagePullPolicy: Never
+  description: Example sequence orchestrator coordinating two agents
   llm:
-    modelName: ''
-    baseUrl: ''
+    modelName: qwen3:1.7b
+    baseUrl: http://ollama:11434/v1
   agents:
   - name: agent-1
   - name: agent-2
   strategy:
     type: sequence
     maxRounds: 10
+  openTelemetry:
+    enabled: true
+    endpoint: http://otel-collector:4318
+    serviceName: my-orchestrator
+    samplingRatio: 1.0
