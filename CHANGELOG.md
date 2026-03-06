@@ -2,6 +2,61 @@
 
 <!-- version list -->
 
+## v2.0.0 (2026-03-06)
+
+### Bug Fixes
+
+- Make history work properly
+  ([`f257624`](https://github.com/JuliusHaring/agentickube/commit/f25762437a29f8018c2941802b128782250f84c8))
+
+- Make logs visible in lifespan
+  ([`4a827c7`](https://github.com/JuliusHaring/agentickube/commit/4a827c72196faf75f753b87964b33849151bca96))
+
+- Make session use same uuid format
+  ([`ec4b4d1`](https://github.com/JuliusHaring/agentickube/commit/ec4b4d134539db706b9c299300230ede8f4d52b4))
+
+- Make workspace sync work
+  ([`b0ab2e3`](https://github.com/JuliusHaring/agentickube/commit/b0ab2e3e14fa4f0f7e82d252eca4c320717bcc3c))
+
+### Chores
+
+- Add generation pre commit hook
+  ([`1d3dee5`](https://github.com/JuliusHaring/agentickube/commit/1d3dee52eb26d9c0d467c2c1e1d7361be0ad79bf))
+
+### Documentation
+
+- Add codeowners and contributing
+  ([`4b50275`](https://github.com/JuliusHaring/agentickube/commit/4b50275818db0088fdf721456a20b9578164c405))
+
+- Add more examples to readme
+  ([`ae97798`](https://github.com/JuliusHaring/agentickube/commit/ae97798802009eb3b1d57bde00363c80d46b5689))
+
+- Update readme with catchier intro
+  ([`feac6d6`](https://github.com/JuliusHaring/agentickube/commit/feac6d67a35c9f64ea29abd4b1c3680be8754d8f))
+
+### Features
+
+- Add internet usage skill
+  ([`2600892`](https://github.com/JuliusHaring/agentickube/commit/2600892e0d5a9d367342e3d613059826a7e5b478))
+
+- Add orchestrator
+  ([`9bd1e03`](https://github.com/JuliusHaring/agentickube/commit/9bd1e03458ea2d80d327fbff70ddd433a30959bd))
+
+### Refactoring
+
+- Detangle the markdown and internet skills
+  ([`606fbbf`](https://github.com/JuliusHaring/agentickube/commit/606fbbf599ee481f58fa7db3546732dbb6720e7b))
+
+- Make cli use own config
+  ([`c013473`](https://github.com/JuliusHaring/agentickube/commit/c0134731b312cc44827f35523a7512f180c7fa64))
+
+- Put history related stuff into history.py
+  ([`482bf7f`](https://github.com/JuliusHaring/agentickube/commit/482bf7fd6edbe24023d5b0c2cc068baa6f1b6c33))
+
+- Put skills in run instructions instead of user prompt
+  ([`2a712ad`](https://github.com/JuliusHaring/agentickube/commit/2a712ad81e68d2c6c0d09f8a19c71e1c9ec76f4f))
+
+
 ## v1.11.0 (2026-03-05)
 
 ### Features
