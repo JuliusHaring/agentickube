@@ -1,4 +1,4 @@
-"""Pydantic models mirroring the Agent CRD spec (ai.juliusharing.com/v1)."""
+"""Pydantic models mirroring the Agent and Orchestrator CRD specs (ai.juliusharing.com/v1)."""
 
 from __future__ import annotations
 
@@ -60,6 +60,9 @@ class BootstrapConfig(_Base):
 
 
 class SkillsConfig(_Base):
+    """Skill configuration. skills_filter: names to remove from workspace/skills/."""
+
+    skills_filter: list[str] | None = None
     builtin_skills: list[str] | None = None
     items: list[SkillItem] | None = None
     bootstrap: BootstrapConfig | None = None
@@ -188,6 +191,7 @@ class TriggerConfig(_Base):
 class AgentSpec(_Base):
     image: str | None = None
     image_pull_policy: str | None = None
+    description: str | None = None
     llm: LLMConfig | None = None
     prompts: PromptsConfig | None = None
     functions: list[FunctionConfig] | None = None
@@ -204,3 +208,35 @@ class AgentSpec(_Base):
     env: list[EnvVar] | None = None
     open_telemetry: OpenTelemetryConfig | None = None
     trigger: TriggerConfig | None = None
+
+
+# ── Orchestrator ─────────────────────────────────────────────────────────────
+
+
+class AgentRef(_Base):
+    name: str
+    url: str | None = None
+    description: str | None = None
+
+
+class StrategyConfig(_Base):
+    type: str = "sequence"
+    max_rounds: int = 10
+
+
+class OrchestratorSpec(_Base):
+    image: str | None = None
+    image_pull_policy: str | None = None
+    description: str | None = None
+    llm: LLMConfig | None = None
+    agents: list[AgentRef]
+    strategy: StrategyConfig | None = None
+    trigger: TriggerConfig | None = None
+    resources: ResourcesConfig | None = None
+    security_context: ContainerSecurityContext | None = None
+    pod_security_context: PodSecurityContext | None = None
+    node_selector: dict[str, str] | None = None
+    tolerations: list[Toleration] | None = None
+    service_account_name: str | None = None
+    env: list[EnvVar] | None = None
+    open_telemetry: OpenTelemetryConfig | None = None

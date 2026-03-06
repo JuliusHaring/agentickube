@@ -1,10 +1,16 @@
-import os
 from logging import Logger, getLogger
+
 from colorlog import ColoredFormatter
+from pydantic_settings import BaseSettings
 
-LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
 
-# Base colors for parts
+class LoggingConfig(BaseSettings):
+    log_level: str = "INFO"
+
+
+_config = LoggingConfig()
+LOG_LEVEL = _config.log_level.upper()
+
 LOG_COLORS = {
     "DEBUG": "cyan",
     "INFO": "green",
@@ -23,7 +29,6 @@ SECONDARY_COLORS = {
     }
 }
 
-# Conditional log formats
 DEBUG_FORMAT = (
     "%(log_color)s%(asctime)s "
     "%(cyan)s[%(processName)s:%(process)d]%(reset)s "
@@ -40,7 +45,6 @@ INFO_FORMAT = (
     "%(message)s"
 )
 
-# Choose format based on log level
 LOG_FORMAT = DEBUG_FORMAT if LOG_LEVEL == "DEBUG" else INFO_FORMAT
 
 LOGGING_CONFIG: dict = {
@@ -77,6 +81,21 @@ LOGGING_CONFIG: dict = {
             "propagate": False,
         },
         "uvicorn.access": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "gunicorn": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "gunicorn.error": {
+            "level": LOG_LEVEL,
+            "handlers": ["console"],
+            "propagate": False,
+        },
+        "gunicorn.access": {
             "level": LOG_LEVEL,
             "handlers": ["console"],
             "propagate": False,

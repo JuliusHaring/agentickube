@@ -1,14 +1,13 @@
 """Workspace file tools: read, write, and list files relative to WORKSPACE_DIR."""
 
-import os
 from pathlib import Path
+
+from config import agent_config
 
 
 def _resolve_path(relative_path: str) -> Path:
     """Resolve path relative to workspace; raise ValueError if it escapes the workspace."""
-    workspace_dir = os.environ.get("WORKSPACE_DIR")
-    if not workspace_dir:
-        raise ValueError("Workspace directory is not set")
+    workspace_dir = agent_config.workspace_dir
     raw = (relative_path or "").strip()
     workspace_root = Path(workspace_dir).resolve()
     if not raw or raw == "." or raw == "/" or raw.rstrip("/") == str(workspace_root):

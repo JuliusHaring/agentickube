@@ -1,0 +1,15 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Orchestrator
+metadata:
+  name: example-sequence
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''
+  agents:
+  - name: agent-1
+  - name: agent-2
+  strategy:
+    type: sequence
+    maxRounds: 10

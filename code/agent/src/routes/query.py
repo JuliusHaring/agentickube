@@ -43,12 +43,12 @@ def _query(
         logger.info("Query received: use_memory=False query=%s", request.query[:80])
         session_id = None
     else:
+        session_id = get_session_id(request.session_id)
         logger.info(
             "Query received: use_memory=True session_id=%s query=%s",
             session_id,
             request.query[:80],
         )
-        session_id = get_session_id(request.session_id)
 
     res = agent_loop(
         query=request.query,

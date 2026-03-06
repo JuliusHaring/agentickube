@@ -1,19 +1,73 @@
 import os
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings
+
+from shared.llm import LLMConfig  # noqa: F401 (re-exported for backward compat)
 
 
 class MCPServerConfig(BaseModel):
     url: str
-    type: Literal["sse", "streamable_http"]
+    type: str
+
+
+class AgentConfig(BaseSettings):
+    agent_name: Optional[str] = Field(default=None, validation_alias="AGENT_NAME")
+    agent_description: Optional[str] = Field(
+        default=None, validation_alias="AGENT_DESCRIPTION"
+    )
+    system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
+    mcp_servers: list[MCPServerConfig] = []
+    workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
+    skills_filter: Optional[list[str]] = Field(
+        default=None, validation_alias="SKILLS_FILTER"
+    )
+    conversation_memory_enabled: bool = Field(
+        default=False, validation_alias="CONVERSATION_MEMORY_ENABLED"
+    )
+    conversation_max_history: int = Field(
+        default=20, validation_alias="CONVERSATION_MAX_HISTORY"
+    )
+    port: int = Field(default=8000, validation_alias="PORT")
+    reload: bool = Field(default=False, validation_alias="RELOAD")
+
+    @property
+    def skills_dir(self) -> str:
+        """Runtime skills directory — always inside the workspace."""
+        return str(Path(self.workspace_dir) / "skills")
+
+    @field_validator("skills_filter", mode="before")
+    @classmethod
+    def parse_skills_filter(cls, v: object) -> list[str] | None:
+        if v is None:
+            return None
+        if isinstance(v, list):
+            return [str(x).strip() for x in v if str(x).strip()]
+        if isinstance(v, str):
+            s = v.strip()
+            return [x.strip() for x in s.split(",") if x.strip()] if s else None
+        return None
+
+    @field_validator("mcp_servers", mode="before")
+    @classmethod
+    def parse_mcp_servers(cls, v: object) -> list[dict]:
+        servers = _mcp_servers_from_env()
+        if servers:
+            return servers
+        if isinstance(v, list):
+            return list(v)
+        return []
+
+
+class AgentCLIConfig(AgentConfig):
+    agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
 
 
 def _mcp_servers_from_env() -> list[dict]:
-    """Read MCP servers from env (MCP_SERVER_1_URL, MCP_SERVER_1_TYPE, ...).
-    The operator sets these from the Agent CRD spec.mcpServers."""
+    """Read MCP servers from numbered env vars (MCP_SERVER_1_URL, MCP_SERVER_1_TYPE, ...).
+    Pydantic-settings can't handle dynamic numbered keys, so we read them explicitly."""
     servers = []
     i = 1
     while True:
@@ -24,57 +78,6 @@ def _mcp_servers_from_env() -> list[dict]:
         servers.append({"url": url.strip(), "type": type_.strip().lower()})
         i += 1
     return servers
-
-
-class LLMConfig(BaseSettings):
-    """Agent config. LLM-related values are read from LLM_* env vars (set by operator from Agent CR spec.llm)."""
-
-    model_config = SettingsConfigDict(env_prefix="LLM_")
-
-    provider: Literal["openai", "google", "huggingface", "ollama"] = "openai"
-    model_name: str
-    base_url: Optional[str] = None
-    api_key: str = ""
-
-
-class AgentConfig(BaseSettings):
-    system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
-    mcp_servers: list[MCPServerConfig] = []
-    workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
-    skills_builtin_dir: str = Field(
-        default="/skills/builtin", validation_alias="SKILLS_BUILTIN_DIR"
-    )
-    skills_bootstrap_dir: Optional[str] = Field(
-        default=None, validation_alias="SKILLS_BOOTSTRAP_DIR"
-    )
-    skills_builtins: Optional[str] = Field(
-        default=None, validation_alias="SKILLS_BUILTINS"
-    )
-    conversation_memory_enabled: bool = Field(
-        default=False, validation_alias="CONVERSATION_MEMORY_ENABLED"
-    )
-    conversation_max_history: int = Field(
-        default=20, validation_alias="CONVERSATION_MAX_HISTORY"
-    )
-
-    @property
-    def skills_dir(self) -> str:
-        """Runtime skills directory — always inside the workspace."""
-        return str(Path(self.workspace_dir) / "skills")
-
-    @field_validator("mcp_servers", mode="before")
-    @classmethod
-    def parse_mcp_servers(cls, v: object) -> list[dict]:
-        from_env = _mcp_servers_from_env()
-        if from_env:
-            return from_env
-        if isinstance(v, list):
-            return list(v)
-        return []
-
-
-class AgentCLIConfig(AgentConfig):
-    agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
 
 
 llm_config = LLMConfig()

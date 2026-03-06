@@ -1,3 +1,4 @@
 -r operator-requirements.txt
 -r agent-requirements.txt
+-r orchestrator-requirements.txt
 -r dev-requirements.txt

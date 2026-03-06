@@ -1,5 +1,5 @@
-# Operator Deployment: watches Agent CRs and reconciles them to Deployments.
-# Requires: CRD applied, and RBAC (ServiceAccount agent-operator) in the same namespace (e.g. deploy/example-rbac.yaml).
+# Operator Deployment: watches Agent and Orchestrator CRs and reconciles them to Deployments/Jobs/CronJobs.
+# Requires: CRDs applied, and RBAC (ServiceAccount agent-operator) in the same namespace (e.g. deploy/example-rbac.yaml).
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -1,0 +1,21 @@
+# Generated from code/operator/models.py - task operator:generate-examples
+apiVersion: ai.juliusharing.com/v1
+kind: Orchestrator
+metadata:
+  name: example-council-cron
+spec:
+  llm:
+    modelName: ''
+    baseUrl: ''
+  agents:
+  - name: monitor
+  - name: analyst
+  - name: reporter
+  strategy:
+    type: council
+    maxRounds: 10
+  trigger:
+    type: cron
+    query: Analyze cluster health from multiple perspectives
+    schedule: 0 */6 * * *
+    backoffLimit: 3

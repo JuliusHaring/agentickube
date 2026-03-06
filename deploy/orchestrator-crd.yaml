@@ -1,16 +1,16 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: agents.ai.juliusharing.com
+  name: orchestrators.ai.juliusharing.com
 spec:
   group: ai.juliusharing.com
   scope: Namespaced
   names:
-    plural: agents
-    singular: agent
-    kind: Agent
+    plural: orchestrators
+    singular: orchestrator
+    kind: Orchestrator
     shortNames:
-    - ag
+    - orch
   versions:
   - name: v1
     served: true
@@ -18,7 +18,7 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        description: Agent custom resource (ai.juliusharing.com).
+        description: Orchestrator custom resource (ai.juliusharing.com).
         properties:
           spec:
             properties:
@@ -26,6 +26,9 @@ spec:
                 type: string
                 nullable: true
               imagePullPolicy:
+                type: string
+                nullable: true
+              description:
                 type: string
                 nullable: true
               llm:
@@ -54,106 +57,48 @@ spec:
                     nullable: true
                 type: object
                 nullable: true
-              prompts:
-                properties:
-                  systemPrompt:
-                    type: string
-                    nullable: true
-                type: object
-                nullable: true
-              functions:
+              agents:
                 items:
                   properties:
                     name:
                       type: string
+                    url:
+                      type: string
+                      nullable: true
+                    description:
+                      type: string
+                      nullable: true
                   required:
                   - name
                   type: object
                 type: array
-                nullable: true
-              skills:
+              strategy:
                 properties:
-                  builtinSkills:
-                    items:
-                      type: string
-                    type: array
-                    nullable: true
-                  items:
-                    items:
-                      properties:
-                        name:
-                          type: string
-                        content:
-                          type: string
-                          nullable: true
-                        configMapRef:
-                          properties:
-                            name:
-                              type: string
-                            key:
-                              default: SKILL.md
-                              type: string
-                          required:
-                          - name
-                          type: object
-                          nullable: true
-                      required:
-                      - name
-                      type: object
-                    type: array
-                    nullable: true
-                  bootstrap:
-                    properties:
-                      configMapRef:
-                        properties:
-                          name:
-                            type: string
-                          key:
-                            default: SKILL.md
-                            type: string
-                        required:
-                        - name
-                        type: object
-                        nullable: true
-                    type: object
-                    nullable: true
-                type: object
-                nullable: true
-              mcpServers:
-                items:
-                  properties:
-                    url:
-                      type: string
-                    type:
-                      default: streamable_http
-                      type: string
-                  required:
-                  - url
-                  type: object
-                type: array
-                nullable: true
-              workspace:
-                properties:
-                  path:
-                    default: /workspace
+                  type:
+                    default: sequence
                     type: string
-                  persistentVolumeClaim:
-                    properties:
-                      claimName:
-                        type: string
-                        nullable: true
-                    type: object
-                    nullable: true
+                  maxRounds:
+                    default: 10
+                    type: integer
                 type: object
                 nullable: true
-              conversation:
+              trigger:
                 properties:
-                  enabled:
-                    default: false
-                    type: boolean
-                  maxHistory:
-                    default: 20
+                  type:
+                    default: http
+                    type: string
+                  query:
+                    type: string
+                    nullable: true
+                  schedule:
+                    type: string
+                    nullable: true
+                  backoffLimit:
+                    default: 3
                     type: integer
+                  ttlSecondsAfterFinished:
+                    type: integer
+                    nullable: true
                 type: object
                 nullable: true
               resources:
@@ -311,25 +256,8 @@ spec:
                     nullable: true
                 type: object
                 nullable: true
-              trigger:
-                properties:
-                  type:
-                    default: http
-                    type: string
-                  query:
-                    type: string
-                    nullable: true
-                  schedule:
-                    type: string
-                    nullable: true
-                  backoffLimit:
-                    default: 3
-                    type: integer
-                  ttlSecondsAfterFinished:
-                    type: integer
-                    nullable: true
-                type: object
-                nullable: true
+            required:
+            - agents
             type: object
         required:
         - spec

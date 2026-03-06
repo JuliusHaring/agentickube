@@ -1,23 +1,23 @@
 import logging.config
-import os
 from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI
 
-from logic.skills import seed_workspace_skills
+from config import agent_config
+from logic.skills import sync_workspace_from_repo
 from routes import query_router
 from logic.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger
 
-logging.config.dictConfig(LOGGING_CONFIG)
 logger = get_logger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    seed_workspace_skills()
-    logger.info("Application startup complete")
+    logging.config.dictConfig(LOGGING_CONFIG)
+
+    sync_workspace_from_repo()
     yield
 
 
@@ -31,7 +31,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", "8000")),
-        reload=os.environ.get("RELOAD", "").lower() == "true",
+        port=agent_config.port,
+        reload=agent_config.reload,
         log_config=LOGGING_CONFIG,
     )

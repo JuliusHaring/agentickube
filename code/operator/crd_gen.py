@@ -1,11 +1,12 @@
 """
-Generate deploy/crd.yaml from the operator's Pydantic models (single source of truth).
+Generate deploy/agent-crd.yaml and deploy/orchestrator-crd.yaml from
+the operator's Pydantic models (single source of truth).
 
 Usage (from repo root):
-  PYTHONPATH=code/operator python code/operator/crd_gen.py -o deploy/crd.yaml
+  PYTHONPATH=code/operator python code/operator/crd_gen.py
   task operator:generate-crd
 
-After changing code/operator/models.py, run the generator to refresh the CRD.
+After changing code/operator/models.py, run the generator to refresh the CRDs.
 Add Field(description=...) and Literal[...] in models to get CRD descriptions and enums.
 """
 
@@ -16,6 +17,9 @@ import copy
 import json
 import sys
 from pathlib import Path
+from typing import Type
+
+from pydantic import BaseModel
 
 # Add operator dir for imports when run as script or module
 _operator_dir = Path(__file__).resolve().parent
@@ -23,7 +27,7 @@ _repo_root = _operator_dir.parents[1]
 if str(_operator_dir) not in sys.path:
     sys.path.insert(0, str(_operator_dir))
 
-from models import AgentSpec  # noqa: E402 (path must be set before import)
+from models import AgentSpec, OrchestratorSpec  # noqa: E402
 
 
 def _json_schema_to_openapi(schema: dict) -> dict:
@@ -99,28 +103,25 @@ def _strip_titles_and_default_null(obj):
     return obj
 
 
-def _build_crd_openapi_schema() -> dict:
-    """Build Kubernetes-compatible openAPIV3Schema: no $ref, no definitions, no type: null."""
-    raw = AgentSpec.model_json_schema(mode="serialization")
+def _build_openapi_schema(spec_cls: Type[BaseModel], description: str) -> dict:
+    """Build Kubernetes-compatible openAPIV3Schema from a Pydantic model."""
+    raw = spec_cls.model_json_schema(mode="serialization")
     spec_schema = _json_schema_to_openapi(raw)
 
     definitions = dict(spec_schema.get("definitions", {}))
-    agent_spec = {
+    spec_only = {
         k: v for k, v in spec_schema.items() if k not in ("definitions", "$defs")
     }
-    if agent_spec:
-        definitions["AgentSpec"] = agent_spec
+    spec_key = spec_cls.__name__
+    if spec_only:
+        definitions[spec_key] = spec_only
 
-    # Inline spec: replace $ref to AgentSpec with the full schema (and inline all nested $refs)
-    spec_inlined = _inline_refs({"$ref": "#/definitions/AgentSpec"}, definitions)
-
-    # Convert anyOf [T, null] -> nullable: true
+    spec_inlined = _inline_refs({"$ref": f"#/definitions/{spec_key}"}, definitions)
     spec_inlined = _anyof_null_to_nullable(spec_inlined)
 
-    # Root CR: only spec at top level; no definitions (K8s forbids them)
     root = {
         "type": "object",
-        "description": "Agent custom resource (ai.juliusharing.com).",
+        "description": description,
         "properties": {"spec": spec_inlined},
         "required": ["spec"],
     }
@@ -129,22 +130,29 @@ def _build_crd_openapi_schema() -> dict:
     return root
 
 
-def _crd_document(openapi_schema: dict) -> dict:
+def _crd_document(
+    openapi_schema: dict,
+    *,
+    crd_name: str,
+    group: str,
+    plural: str,
+    singular: str,
+    kind: str,
+    short_names: list[str],
+) -> dict:
     """Full CustomResourceDefinition document."""
     return {
         "apiVersion": "apiextensions.k8s.io/v1",
         "kind": "CustomResourceDefinition",
-        "metadata": {
-            "name": "agents.ai.juliusharing.com",
-        },
+        "metadata": {"name": crd_name},
         "spec": {
-            "group": "ai.juliusharing.com",
+            "group": group,
             "scope": "Namespaced",
             "names": {
-                "plural": "agents",
-                "singular": "agent",
-                "kind": "Agent",
-                "shortNames": ["ag"],
+                "plural": plural,
+                "singular": singular,
+                "kind": kind,
+                "shortNames": short_names,
             },
             "versions": [
                 {
@@ -158,21 +166,73 @@ def _crd_document(openapi_schema: dict) -> dict:
     }
 
 
+# ── CRD definitions ─────────────────────────────────────────────────────────
+
+CRDS = [
+    {
+        "spec_cls": AgentSpec,
+        "description": "Agent custom resource (ai.juliusharing.com).",
+        "crd_name": "agents.ai.juliusharing.com",
+        "group": "ai.juliusharing.com",
+        "plural": "agents",
+        "singular": "agent",
+        "kind": "Agent",
+        "short_names": ["ag"],
+        "output": "deploy/agent-crd.yaml",
+    },
+    {
+        "spec_cls": OrchestratorSpec,
+        "description": "Orchestrator custom resource (ai.juliusharing.com).",
+        "crd_name": "orchestrators.ai.juliusharing.com",
+        "group": "ai.juliusharing.com",
+        "plural": "orchestrators",
+        "singular": "orchestrator",
+        "kind": "Orchestrator",
+        "short_names": ["orch"],
+        "output": "deploy/orchestrator-crd.yaml",
+    },
+]
+
+
+def _write_crd(crd_def: dict, yaml_module, *, stdout: bool = False) -> None:
+    spec_cls = crd_def["spec_cls"]
+    schema = _build_openapi_schema(spec_cls, crd_def["description"])
+    crd = _crd_document(
+        schema,
+        crd_name=crd_def["crd_name"],
+        group=crd_def["group"],
+        plural=crd_def["plural"],
+        singular=crd_def["singular"],
+        kind=crd_def["kind"],
+        short_names=crd_def["short_names"],
+    )
+
+    yaml_str = yaml_module.dump(
+        crd,
+        default_flow_style=False,
+        sort_keys=False,
+        allow_unicode=True,
+        width=120,
+    )
+
+    if stdout:
+        print(yaml_str)
+    else:
+        out_path = Path(crd_def["output"])
+        out = out_path if out_path.is_absolute() else _repo_root / out_path
+        out.parent.mkdir(parents=True, exist_ok=True)
+        out.write_text(yaml_str, encoding="utf-8")
+        print(f"Wrote {out}", file=sys.stderr)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate Agent CRD from Pydantic models"
-    )
-    parser.add_argument(
-        "-o",
-        "--output",
-        type=Path,
-        default=Path("deploy/crd.yaml"),
-        help="Output path for CRD YAML (default: deploy/crd.yaml)",
+        description="Generate Agent and Orchestrator CRDs from Pydantic models"
     )
     parser.add_argument(
         "--stdout",
         action="store_true",
-        help="Write YAML to stdout instead of file",
+        help="Write YAML to stdout instead of files",
     )
     args = parser.parse_args()
 
@@ -182,25 +242,8 @@ def main() -> int:
         print("PyYAML required: pip install pyyaml", file=sys.stderr)
         return 1
 
-    openapi_schema = _build_crd_openapi_schema()
-    crd = _crd_document(openapi_schema)
-
-    # Kubernetes-style YAML (no flow style, consistent indent)
-    yaml_str = yaml.dump(
-        crd,
-        default_flow_style=False,
-        sort_keys=False,
-        allow_unicode=True,
-        width=120,
-    )
-
-    if args.stdout:
-        print(yaml_str)
-    else:
-        out = args.output if args.output.is_absolute() else _repo_root / args.output
-        out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(yaml_str, encoding="utf-8")
-        print(f"Wrote {out}", file=sys.stderr)
+    for crd_def in CRDS:
+        _write_crd(crd_def, yaml, stdout=args.stdout)
 
     return 0
 
