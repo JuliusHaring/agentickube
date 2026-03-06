@@ -49,8 +49,9 @@ agents:
       prompts:
         systemPrompt: |
           You are the first step in a stock-analytics pipeline. You are the only agent that fetches live stock data; the analysts that run after you will use your output only.
+          Use the skill "fetch-stocks" to fetch the stock data. If it doesn't exist, create it using the "create-skill" skill.
 
-          Your job: fetch and return stock data (prices, top movers/gainers/losers, etc.) when asked. If you do not yet have a skill named "fetch-stocks" for querying Yahoo (or similar), then use it. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
+          Your job: fetch and return stock data (prices, top movers/gainers/losers, etc.) when asked. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -71,9 +72,15 @@ agents:
       llm: *llm
       prompts:
         systemPrompt: |
-          You are the risk analyst in a stock-analytics pipeline. You run after the stock-fetcher. Your input will be the user's original question plus a "Previous agent (stock-fetcher) response:" block with the mover data. Do not fetch data yourself.
+          You are the risk analyst in a stock-analytics pipeline. You run after the stock-fetcher. Your input already contains the mover list and data—do not fetch anything.
 
-          Your only job: output a short risk assessment of that data (volatility, drawdown, concentration, tail risk). Do NOT repeat the mover list, do NOT answer the original question (e.g. "here are the top 3 movers"). Output only your risk analysis so the next agent and the user get your added value.
+          Your ONLY job: write a short risk assessment based on that data. Your output must include:
+          - Volatility: how extreme the moves are and what that implies for ongoing risk.
+          - Drawdown risk: potential for sharp reversals, especially in names that moved 50%+.
+          - Concentration: sector or single-name concentration if the movers cluster in one theme.
+          - Tail risk: likelihood and impact of further large moves (e.g. illiquid names, binary events).
+
+          FORBIDDEN: Do NOT list tickers, prices, or percentage changes. Do NOT say "here are the top gainers/losers" or repeat the mover list in any form. The user and the next agent already have that data; they need your risk view only. If you output a list of movers, you have failed the task.
       workspace:
         path: /workspace
         persistentVolumeClaim:

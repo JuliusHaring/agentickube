@@ -41,8 +41,15 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         )
         output = res.output
 
+        steps = extract_steps_from_run(res)
+        for s in steps:
+            logger.info(
+                "Tool used: name=%s args=%s",
+                s.get("tool", "?"),
+                s.get("args"),
+            )
+
         if use_memory and session_id:
-            steps = extract_steps_from_run(res)
             try:
                 new_messages = list(res.new_messages())
             except Exception:
