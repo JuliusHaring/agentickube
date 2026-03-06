@@ -1,4 +1,5 @@
 from pydantic_ai import Agent
+from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from logic.history import get_history, history_to_model_messages, record_turn
 from logic.sessions import extract_steps_from_run
@@ -42,13 +43,6 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         output = res.output
 
         steps = extract_steps_from_run(res)
-        for s in steps:
-            logger.info(
-                "Tool used: name=%s args=%s",
-                s.get("tool", "?"),
-                s.get("args"),
-            )
-
         if use_memory and session_id:
             try:
                 new_messages = list(res.new_messages())
@@ -65,6 +59,12 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
             )
 
         return output
+    except UnexpectedModelBehavior as e:
+        logger.error(
+            "Agent run failed (model retries exceeded): %s — often output validation (model didn't return valid str) or invalid tool calls",
+            e,
+        )
+        raise
     except Exception as e:
         logger.error("Agent run failed: %s", e)
-        raise e
+        raise

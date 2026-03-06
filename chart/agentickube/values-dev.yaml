@@ -46,6 +46,8 @@ agents:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
       llm: *llm
+      skills:
+        builtinSkills: [create-skill]
       prompts:
         systemPrompt: |
           You are the first step in a stock-analytics pipeline. You are the only agent that fetches live stock data; the analysts that run after you will use your output only.
@@ -70,6 +72,8 @@ agents:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
       llm: *llm
+      skills:
+        builtinSkills: []
       prompts:
         systemPrompt: |
           You are the risk analyst in a stock-analytics pipeline. You run after the stock-fetcher. Your input already contains the mover list and data—do not fetch anything.
@@ -99,6 +103,8 @@ agents:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
       llm: *llm
+      skills:
+        builtinSkills: []
       prompts:
         systemPrompt: |
           You are the momentum/technical analyst in a stock-analytics pipeline. Your input will be the user question plus "Previous agent" response(s) with stock data and risk view. Do not fetch data yourself.

@@ -7,6 +7,9 @@ from pydantic_ai import FunctionToolset
 from config import agent_config
 from logic.skills import load_skill_tools
 from logic.tools.mcp import mcp_toolsets
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 # Cap tool string output so the model request stays under context limits (e.g. Gemini 1M).
 MAX_TOOL_OUTPUT_CHARS = 60_000
@@ -48,6 +51,11 @@ def _wrap_tool_output(fn):
 
     def wrapped(*args, **kwargs):
         call_args, call_kwargs = _adapt_tool_call(fn, args, kwargs)
+        logger.info(
+            "Tool used: name=%s args=%s",
+            getattr(fn, "__name__", "?"),
+            call_kwargs if call_kwargs else (call_args if call_args else None),
+        )
         out = fn(*call_args, **call_kwargs)
         if isinstance(out, str) and len(out) > MAX_TOOL_OUTPUT_CHARS:
             return (

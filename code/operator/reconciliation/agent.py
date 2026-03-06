@@ -108,9 +108,11 @@ def _skills_env(
 ) -> list[client.V1EnvVar]:
     skills = skills or SkillsConfig()
     env: list[client.V1EnvVar] = []
-    if skills.skills_filter:
+    if skills.builtin_skills is not None:
         env.append(
-            client.V1EnvVar(name="SKILLS_FILTER", value=",".join(skills.skills_filter))
+            client.V1EnvVar(
+                name="BUILTIN_SKILLS", value=",".join(skills.builtin_skills)
+            )
         )
     return env
 

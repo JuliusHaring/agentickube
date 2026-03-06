@@ -134,11 +134,11 @@ def sync_workspace_from_repo(
     template_dir: str = WORKSPACE_TEMPLATE_DIR,
     workspace_dir: str = agent_config.workspace_dir,
 ) -> None:
-    """Sync repo workspace template into the runtime workspace, then apply skills_filter.
+    """Sync repo workspace template into the runtime workspace, then apply builtin_skills.
 
     Copies the full template (skills and any future content) into workspace_dir so
-    a PVC mount gets prefilled. If skills_filter is set, those skill dirs are
-    removed from workspace/skills/.
+    a PVC mount gets prefilled. If builtin_skills is set, only those skill dirs are
+    kept in workspace/skills/; all others are removed.
     """
     template = Path(template_dir)
     workspace = Path(workspace_dir)
@@ -158,15 +158,14 @@ def sync_workspace_from_repo(
         else:
             shutil.copy2(str(child), str(dest))
 
-    # Remove skills listed in skills_filter.
+    # If builtin_skills is set (including []), keep only those skills; remove all others.
     skills_dir = workspace / "skills"
-    filter_names = agent_config.skills_filter or []
-    if filter_names and skills_dir.is_dir():
-        for name in filter_names:
-            path = skills_dir / name
-            if path.is_dir():
-                shutil.rmtree(path)
-                logger.info("Removed skill '%s' (skills_filter)", name)
+    if agent_config.builtin_skills is not None and skills_dir.is_dir():
+        keep = frozenset(agent_config.builtin_skills)
+        for child in list(skills_dir.iterdir()):
+            if child.is_dir() and child.name not in keep:
+                shutil.rmtree(child)
+                logger.info("Removed skill '%s' (not in builtin_skills)", child.name)
 
 
 def load_skills() -> list[str]:

@@ -60,9 +60,8 @@ class BootstrapConfig(_Base):
 
 
 class SkillsConfig(_Base):
-    """Skill configuration. skills_filter: names to remove from workspace/skills/."""
+    """Skill configuration. builtin_skills: only these skills are kept in workspace/skills/ (allowlist)."""
 
-    skills_filter: list[str] | None = None
     builtin_skills: list[str] | None = None
     items: list[SkillItem] | None = None
     bootstrap: BootstrapConfig | None = None

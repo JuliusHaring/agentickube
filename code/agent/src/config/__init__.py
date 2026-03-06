@@ -18,9 +18,6 @@ class AgentConfig(BaseSettings):
     system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
     workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
-    skills_filter: Optional[list[str]] = Field(
-        default=None, validation_alias="SKILLS_FILTER"
-    )
     conversation_memory_enabled: bool = Field(
         default=False, validation_alias="CONVERSATION_MEMORY_ENABLED"
     )
@@ -35,16 +32,23 @@ class AgentConfig(BaseSettings):
         """Runtime skills directory — always inside the workspace."""
         return str(Path(self.workspace_dir) / "skills")
 
-    @field_validator("skills_filter", mode="before")
+    builtin_skills: Optional[list[str]] = Field(
+        default=None, validation_alias="BUILTIN_SKILLS"
+    )
+
+    @field_validator("builtin_skills", mode="before")
     @classmethod
-    def parse_skills_filter(cls, v: object) -> list[str] | None:
+    def parse_builtin_skills(cls, v: object) -> list[str] | None:
         if v is None:
             return None
         if isinstance(v, list):
             return [str(x).strip() for x in v if str(x).strip()]
         if isinstance(v, str):
             s = v.strip()
-            return [x.strip() for x in s.split(",") if x.strip()] if s else None
+            # Empty string means explicit empty allowlist (no skills).
+            if not s:
+                return []
+            return [x.strip() for x in s.split(",") if x.strip()]
         return None
 
     @field_validator("mcp_servers", mode="before")
