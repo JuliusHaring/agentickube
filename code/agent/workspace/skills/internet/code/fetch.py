@@ -1,6 +1,5 @@
-"""Fetch URLs and parse markdown. Uses httpx and an optional custom User-Agent."""
+"""Fetch URLs over HTTP/HTTPS. Uses httpx with an optional custom User-Agent."""
 
-import markdown
 import httpx
 
 DEFAULT_USER_AGENT = "AgentickubeAgent/1.0 (httpx)"
@@ -28,17 +27,3 @@ def fetch_url(
         )
     except httpx.RequestError as e:
         return f"Error fetching {url}: {e}"
-
-
-def parse_markdown(markdown_text: str) -> str:
-    """Parse markdown text and return HTML.
-
-    Args:
-        markdown_text: Raw markdown string (e.g. from a file or fetch_url).
-    """
-    if not markdown_text or not markdown_text.strip():
-        return ""
-    return markdown.markdown(
-        markdown_text.strip(),
-        extensions=["extra"],
-    )
