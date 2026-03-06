@@ -1,0 +1,18 @@
+apiVersion: v2
+name: agentickube
+description: Agents in Kubernetes — declarative, yours, no lock-in. Operator for Agent and Orchestrator CRDs.
+type: application
+version: 0.1.0
+# Set at release time from VERSION (CD); local/dev uses this placeholder
+appVersion: "0.0.0-dev"
+keywords:
+  - kubernetes
+  - operator
+  - agents
+  - llm
+home: https://github.com/JuliusHaring/agentickube
+sources:
+  - https://github.com/JuliusHaring/agentickube
+maintainers:
+  - name: AgenticKube
+    url: https://github.com/JuliusHaring/agentickube

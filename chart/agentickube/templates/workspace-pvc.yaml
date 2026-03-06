@@ -1,0 +1,13 @@
+{{- if .Values.workspacePvc.create }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.workspacePvc.name }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.workspacePvc.size }}
+{{- end }}

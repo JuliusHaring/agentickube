@@ -4,6 +4,7 @@ includes:
   docker: tasks/docker.yaml
   k8s: tasks/k8s.yaml
   dev: tasks/dev.yaml
+  chart: tasks/chart.yaml
   agent: code/agent/tasks/agent.yaml
   operator: code/operator/tasks/operator.yaml
   orchestrator: code/orchestrator/tasks/orchestrator.yaml
@@ -17,9 +18,4 @@ tasks:
     - task: docker:build-all
     - task: k8s:create-ns
     - task: k8s:set-context
-    - task: operator:generate
-    - task: k8s:apply-crd
-    - task: k8s:init-ns
-    - task: k8s:apply-rbac
-    - task: k8s:apply-manifests
-    - task: k8s:apply-operator
+    - task: chart:install-dev

@@ -6,4 +6,3 @@ tasks:
   generate:
     cmds:
       - PYTHONPATH=code/operator python code/operator/crd_gen.py
-      - PYTHONPATH=code/operator python code/operator/examples_gen.py

@@ -1,7 +1,21 @@
+{{- if .Values.ollama.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-models
+  namespace: {{ .Release.Namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.ollama.pvc.size | default "7Gi" }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: ollama
+  namespace: {{ .Release.Namespace }}
   labels:
     app: ollama
 spec:
@@ -16,7 +30,7 @@ spec:
     spec:
       initContainers:
         - name: pull-model
-          image: ollama/ollama:latest
+          image: {{ .Values.ollama.image }}
           command:
             - sh
             - -c
@@ -27,7 +41,7 @@ spec:
               echo "Waiting for server to be ready..."
               for i in $(seq 1 30); do
                 if ollama list 2>/dev/null; then
-                  echo "Server ready. Pulling model qwen3:1.7b..."
+                  echo "Server ready. Pulling model {{ .Values.ollama.model }}..."
                   break
                 fi
                 if [ "$i" -eq 30 ]; then
@@ -36,14 +50,14 @@ spec:
                 fi
                 sleep 2
               done
-              ollama pull qwen3:1.7b
+              ollama pull {{ .Values.ollama.model }}
               echo "Model pull complete."
           volumeMounts:
             - name: models
               mountPath: /root/.ollama
       containers:
         - name: ollama
-          image: ollama/ollama:latest
+          image: {{ .Values.ollama.image }}
           args: ["serve"]
           ports:
             - name: http
@@ -58,24 +72,12 @@ spec:
         - name: models
           persistentVolumeClaim:
             claimName: ollama-models
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: ollama-models
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 7Gi
-
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: ollama
+  namespace: {{ .Release.Namespace }}
 spec:
   selector:
     app: ollama
@@ -83,4 +85,4 @@ spec:
     - name: http
       port: 11434
       targetPort: 11434
-
+{{- end }}

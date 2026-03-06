@@ -23,17 +23,3 @@ tasks:
     - kubectl delete cronjob --all -n agentickube-ns
     - kubectl delete job --all -n agentickube-ns
 
-  apply-crd:
-    - kubectl apply -f deploy/agent-crd.yaml
-    - kubectl apply -f deploy/orchestrator-crd.yaml
-
-  apply-operator: kubectl apply -f deploy/operator.yaml
-
-  apply-rbac: kubectl apply -f deploy/example-rbac.yaml
-
-  apply-manifests: kubectl apply -f manifests/
-
-  apply-all:
-    - task: apply-crd
-    - task: apply-operator
-    - task: apply-manifests

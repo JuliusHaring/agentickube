@@ -1,15 +1,15 @@
 # Operator Deployment: watches Agent and Orchestrator CRs and reconciles them to Deployments/Jobs/CronJobs.
-# Requires: CRDs applied, and RBAC (ServiceAccount agentickube-operator) in the same namespace (e.g. deploy/example-rbac.yaml).
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: agentickube-operator
-  namespace: agentickube-ns
+  namespace: {{ .Release.Namespace }}
   labels:
     app.kubernetes.io/name: agentickube-operator
     app.kubernetes.io/part-of: agentickube
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.operator.replicas }}
   selector:
     matchLabels:
       app.kubernetes.io/name: agentickube-operator
@@ -22,6 +22,5 @@ spec:
       serviceAccountName: agentickube-operator
       containers:
         - name: operator
-          # Use local image when running deploy-all (docker:build-all); for released installs use ghcr.io/juliusharing/agentickube/operator:latest
-          image: agentickube-operator:latest
-          imagePullPolicy: IfNotPresent
+          image: "{{ .Values.operator.image.repository }}:{{ .Values.operator.image.tag | default .Chart.AppVersion | default `latest` }}"
+          imagePullPolicy: {{ .Values.operator.image.pullPolicy }}

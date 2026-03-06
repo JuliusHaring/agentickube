@@ -3,9 +3,11 @@
 
 # AgenticKube
 
+[![Star History Chart](https://api.star-history.com/image?repos=JuliusHaring/agentickube&type=date&legend=bottom-right)](https://www.star-history.com/?repos=JuliusHaring%2Fagentickube&type=date&legend=top-left)
+
 **🤖 Agents in Kubernetes — declarative, yours, no lock-in.**
 
-**Try it:** peek at the [Agent CRD](deploy/agent-crd.yaml), [Orchestrator CRD](deploy/orchestrator-crd.yaml), and [example Agent](deploy/example-agent.yaml), then follow the install steps below.
+**Try it:** install with Helm (see below), or peek at the [chart values](chart/agentickube/values.yaml) and [values-dev](chart/agentickube/values-dev.yaml) for examples.
 
 Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Optionally coordinate multiple agents with an `Orchestrator` (currently sequence or team). Your models, your cluster.
 
@@ -16,47 +18,50 @@ Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator
 | 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skills/SKILL.md) |
 | 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
 | 🤝 | **Orchestrator** — optional multi-agent coordination (sequence, team) |
-| 📦 | **Zip → apply** — CRDs + operator + examples, then you're live |
+| 📦 | **Helm OCI** — one command to install CRDs + operator from GHCR |
 
 ## Installation
 
-Install from the **release zip** and **container images** (GHCR). No clone required.
+**Prerequisites:** Helm 3.8+, a Kubernetes cluster, and `kubectl` configured.
 
-1. **Download the deploy bundle**  
-   From the [latest release](https://github.com/JuliusHaring/agentickube/releases), download `agentickube-deploy.zip`, unzip it, and `cd` into the extracted folder (it contains `agent-crd.yaml`, `orchestrator-crd.yaml`, `example-rbac.yaml`, `operator.yaml`, `example-agent.yaml`, `example-orchestrator.yaml`).
+### Helm (recommended)
 
-2. **Images**  
-   The operator, agent, and orchestrator images are published to GitHub Container Registry:
-   - `ghcr.io/juliusharing/agentickube/operator:latest` (and versioned tags)
-   - `ghcr.io/juliusharing/agentickube/agent:latest`
-   - `ghcr.io/juliusharing/agentickube/orchestrator:latest`
+Install the operator and CRDs from GitHub Container Registry:
 
-   The YAML in the zip references these; ensure your cluster can pull from GHCR (e.g. public packages, or configure imagePullSecrets if private).
+```bash
+helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart \
+  --namespace agentickube-ns \
+  --create-namespace
+```
 
-3. **Apply in order**
-   ```bash
-   kubectl create namespace agentickube-ns
-   kubectl apply -f agent-crd.yaml
-   kubectl apply -f orchestrator-crd.yaml
-   kubectl apply -f example-rbac.yaml
-   kubectl apply -f operator.yaml
-   ```
-   All resources use namespace `agentickube-ns`; edit the YAML if you want a different namespace.
+The chart uses the operator image from GHCR by default. To pin a version:
 
-4. **Create an Agent**  
-   Edit `example-agent.yaml`: set `spec.llm.modelName`, `spec.llm.baseUrl`, and optionally `apiKey` (or `secretName`/`secretKey`). Then:
-   ```bash
-   kubectl apply -f example-agent.yaml
-   ```
+```bash
+helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart \
+  --namespace agentickube-ns \
+  --create-namespace \
+  --set operator.image.tag=2.1.0
+```
 
-5. **Create an Orchestrator (optional)**  
-   Edit `example-orchestrator.yaml`: set the LLM config and agent references. Then:
-   ```bash
-   kubectl apply -f example-orchestrator.yaml
-   ```
+**Optional stack (values):** Enable Ollama (`ollama.enabled`), OpenTelemetry collector (`otel.enabled`), and Jaeger (`jaeger.enabled`) for local or dev clusters. Use `agents: [{ name, spec }, ...]` and `orchestrators: [{ name, spec }, ...]` to create multiple Agent and Orchestrator CRs from the chart. See [chart/agentickube/values.yaml](chart/agentickube/values.yaml) and [chart/agentickube/values-dev.yaml](chart/agentickube/values-dev.yaml) for examples.
 
-**From clone (optional)**  
-If you have the repo cloned, apply from the `deploy/` directory: same files and order as above (`agent-crd.yaml` → `orchestrator-crd.yaml` → `example-rbac.yaml` → `operator.yaml` → your Agent/Orchestrator CRs).
+**Images** (all on GHCR; chart references these by default):
+
+- `ghcr.io/juliusharing/agentickube/operator:latest` (and versioned tags)
+- `ghcr.io/juliusharing/agentickube/agent:latest`
+- `ghcr.io/juliusharing/agentickube/orchestrator:latest`
+
+Ensure your cluster can pull from GHCR (e.g. public packages, or configure imagePullSecrets if private).
+
+**Create Agents/Orchestrators** — set `agents` and `orchestrators` in values (see [values-dev.yaml](chart/agentickube/values-dev.yaml)), or `kubectl apply` your own Agent/Orchestrator YAML.
+
+### GitOps (ArgoCD / Flux)
+
+Use the same chart from OCI: point your Application or HelmRelease to `oci://ghcr.io/juliusharing/agentickube/chart`. CRDs are included in the chart with install hooks so they apply before the operator.
+
+### From clone (developers)
+
+From the repo root: `task deploy` builds images, generates CRDs into the chart, and runs `helm upgrade --install` with [values-dev.yaml](chart/agentickube/values-dev.yaml) (Ollama, OTEL, Jaeger, one example Agent and Orchestrator). Run `task operator:run` for an out-of-cluster operator, or `task agent:run` for a local agent. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

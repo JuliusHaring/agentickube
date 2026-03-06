@@ -1,19 +1,22 @@
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
-  name: orchestrators.ai.juliusharing.com
+  name: agents.ai.juliusharing.com
   labels:
-    app.kubernetes.io/name: orchestrators
+    app.kubernetes.io/name: agents
     app.kubernetes.io/part-of: agentickube
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: '-1'
 spec:
   group: ai.juliusharing.com
   scope: Namespaced
   names:
-    plural: orchestrators
-    singular: orchestrator
-    kind: Orchestrator
+    plural: agents
+    singular: agent
+    kind: Agent
     shortNames:
-    - orch
+    - ag
   versions:
   - name: v1
     served: true
@@ -21,7 +24,7 @@ spec:
     schema:
       openAPIV3Schema:
         type: object
-        description: Orchestrator custom resource (ai.juliusharing.com).
+        description: Agent custom resource (ai.juliusharing.com).
         properties:
           spec:
             properties:
@@ -60,48 +63,112 @@ spec:
                     nullable: true
                 type: object
                 nullable: true
-              agents:
+              prompts:
+                properties:
+                  systemPrompt:
+                    type: string
+                    nullable: true
+                type: object
+                nullable: true
+              functions:
                 items:
                   properties:
                     name:
                       type: string
-                    url:
-                      type: string
-                      nullable: true
-                    description:
-                      type: string
-                      nullable: true
                   required:
                   - name
                   type: object
                 type: array
-              strategy:
+                nullable: true
+              skills:
+                description: 'Skill configuration. skills_filter: names to remove from workspace/skills/.'
                 properties:
-                  type:
-                    default: sequence
-                    type: string
-                  maxRounds:
-                    default: 10
-                    type: integer
+                  skillsFilter:
+                    items:
+                      type: string
+                    type: array
+                    nullable: true
+                  builtinSkills:
+                    items:
+                      type: string
+                    type: array
+                    nullable: true
+                  items:
+                    items:
+                      properties:
+                        name:
+                          type: string
+                        content:
+                          type: string
+                          nullable: true
+                        configMapRef:
+                          properties:
+                            name:
+                              type: string
+                            key:
+                              default: SKILL.md
+                              type: string
+                          required:
+                          - name
+                          type: object
+                          nullable: true
+                      required:
+                      - name
+                      type: object
+                    type: array
+                    nullable: true
+                  bootstrap:
+                    properties:
+                      configMapRef:
+                        properties:
+                          name:
+                            type: string
+                          key:
+                            default: SKILL.md
+                            type: string
+                        required:
+                        - name
+                        type: object
+                        nullable: true
+                    type: object
+                    nullable: true
                 type: object
                 nullable: true
-              trigger:
+              mcpServers:
+                items:
+                  properties:
+                    url:
+                      type: string
+                    type:
+                      default: streamable_http
+                      type: string
+                  required:
+                  - url
+                  type: object
+                type: array
+                nullable: true
+              workspace:
                 properties:
-                  type:
-                    default: http
+                  path:
+                    default: /workspace
                     type: string
-                  query:
-                    type: string
+                  persistentVolumeClaim:
+                    properties:
+                      claimName:
+                        type: string
+                        nullable: true
+                    type: object
                     nullable: true
-                  schedule:
-                    type: string
-                    nullable: true
-                  backoffLimit:
-                    default: 3
+                type: object
+                nullable: true
+              conversation:
+                properties:
+                  enabled:
+                    default: false
+                    type: boolean
+                  maxHistory:
+                    default: 20
                     type: integer
-                  ttlSecondsAfterFinished:
-                    type: integer
-                    nullable: true
                 type: object
                 nullable: true
               resources:
@@ -259,8 +326,25 @@ spec:
                     nullable: true
                 type: object
                 nullable: true
-            required:
-            - agents
+              trigger:
+                properties:
+                  type:
+                    default: http
+                    type: string
+                  query:
+                    type: string
+                    nullable: true
+                  schedule:
+                    type: string
+                    nullable: true
+                  backoffLimit:
+                    default: 3
+                    type: integer
+                  ttlSecondsAfterFinished:
+                    type: integer
+                    nullable: true
+                type: object
+                nullable: true
             type: object
         required:
         - spec

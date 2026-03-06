@@ -1,0 +1,60 @@
+# Default values for agentickube.
+# Install: helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart
+
+# Namespace for the operator and RBAC (created if --create-namespace)
+namespace: agentickube-ns
+
+# Operator Deployment
+operator:
+  image:
+    repository: ghcr.io/juliusharing/agentickube/operator
+    tag: ""
+    pullPolicy: IfNotPresent
+  replicas: 1
+
+# RBAC: ServiceAccount, ClusterRole, ClusterRoleBinding for the operator
+rbac:
+  create: true
+
+# Optional: Ollama LLM server (for local/dev use)
+ollama:
+  enabled: false
+  image: ollama/ollama:latest
+  model: qwen3:1.7b
+  pvc:
+    size: 7Gi
+
+# Optional: OpenTelemetry collector (for traces/metrics)
+otel:
+  enabled: false
+  image: otel/opentelemetry-collector-contrib:latest
+
+# Optional: Jaeger all-in-one (OTEL exporter; enable with otel for tracing UI)
+jaeger:
+  enabled: false
+  image: jaegertracing/all-in-one:latest
+
+# Agent image defaults when creating agents from values (used if agent spec omits image)
+agentImage:
+  repository: ghcr.io/juliusharing/agentickube/agent
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Orchestrator image defaults when creating orchestrators from values
+orchestratorImage:
+  repository: ghcr.io/juliusharing/agentickube/orchestrator
+  tag: ""
+  pullPolicy: IfNotPresent
+
+# Multiple Agent CRs: list of { name, spec }. spec is the full Agent spec (ai.juliusharing.com/v1).
+# Example: agents: [ { name: my-agent, spec: { llm: { modelName: qwen3:1.7b, baseUrl: http://ollama:11434/v1 }, ... } } ]
+agents: []
+
+# Multiple Orchestrator CRs: list of { name, spec }. spec must include agents: [ { name: "agent-name" }, ... ].
+orchestrators: []
+
+# Optional: create a default PVC for agent workspaces (e.g. when agents[].spec.workspace.persistentVolumeClaim.claimName references it)
+workspacePvc:
+  create: false
+  name: agent-workspace-pvc
+  size: 1Gi

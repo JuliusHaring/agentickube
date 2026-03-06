@@ -1,5 +1,5 @@
 """
-Generate deploy/agent-crd.yaml and deploy/orchestrator-crd.yaml from
+Generate chart/agentickube/templates/crd-agent.yaml and crd-orchestrator.yaml from
 the operator's Pydantic models (single source of truth).
 
 Usage (from repo root):
@@ -154,6 +154,10 @@ def _crd_document(
                 "app.kubernetes.io/name": plural,
                 "app.kubernetes.io/part-of": _CRD_LABELS_PART_OF,
             },
+            "annotations": {
+                "helm.sh/hook": "pre-install",
+                "helm.sh/hook-weight": "-1",
+            },
         },
         "spec": {
             "group": group,
@@ -188,7 +192,7 @@ CRDS = [
         "singular": "agent",
         "kind": "Agent",
         "short_names": ["ag"],
-        "output": "deploy/agent-crd.yaml",
+        "output": "chart/agentickube/templates/crd-agent.yaml",
     },
     {
         "spec_cls": OrchestratorSpec,
@@ -199,7 +203,7 @@ CRDS = [
         "singular": "orchestrator",
         "kind": "Orchestrator",
         "short_names": ["orch"],
-        "output": "deploy/orchestrator-crd.yaml",
+        "output": "chart/agentickube/templates/crd-orchestrator.yaml",
     },
 ]
 

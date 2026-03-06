@@ -120,6 +120,7 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: write
+      packages: write
 
     steps:
       - name: Checkout repository
@@ -153,22 +154,27 @@ jobs:
       - name: Install generator dependencies
         run: pip install -r environments/shared-requirements.txt
 
-      - name: Generate CRDs and examples from models
+      - name: Generate CRDs from models
         run: task operator:generate
 
-      - name: Zip deploy artifacts
-        run: |
-          cd deploy && zip -r ../agentickube-deploy.zip \
-            agent-crd.yaml orchestrator-crd.yaml \
-            example-rbac.yaml operator.yaml \
-            example-agent.yaml example-orchestrator.yaml \
-          && cd ..
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: "v3.14.0"
 
-      - name: Create tag and release with assets
+      - name: Set chart appVersion and package
+        env:
+          HELM_EXPERIMENTAL_OCI: 1
+          VERSION: ${{ needs.version.outputs.version }}
+        run: |
+          sed -i.bak "s/^appVersion:.*/appVersion: \"$VERSION\"/" chart/agentickube/Chart.yaml
+          helm package chart/agentickube --version "$VERSION" --app-version "$VERSION"
+          echo "${{ secrets.GITHUB_TOKEN }}" | helm registry login ghcr.io -u ${{ github.actor }} --password-stdin
+          helm push agentickube-"$VERSION".tgz oci://ghcr.io/juliusharing/agentickube/chart
+
+      - name: Create tag and release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.version.outputs.tag }}
           name: Release ${{ needs.version.outputs.tag }}
           body_path: release_notes.md
-          files: agentickube-deploy.zip
-          allow_updates: true

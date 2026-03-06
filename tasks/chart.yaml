@@ -1,0 +1,16 @@
+version: '3'
+
+tasks:
+  install-local:
+    desc: Install or upgrade the chart from ./chart/agentickube (generates CRDs first)
+    deps:
+      - task: :operator:generate
+    cmds:
+      - helm upgrade --install agentickube ./chart/agentickube -n agentickube-ns --create-namespace
+
+  install-dev:
+    desc: Install or upgrade the chart with dev values (Ollama, OTEL, Jaeger, example agents/orchestrators)
+    deps:
+      - task: :operator:generate
+    cmds:
+      - helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace

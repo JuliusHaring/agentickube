@@ -8,7 +8,7 @@ Versions are managed by [python-semantic-release](https://python-semantic-releas
 
 - **Bump**: On push to `main`, PSR looks at commit messages (conventional commits) and bumps the version only when there are `feat` (minor), `fix` (patch), or `BREAKING CHANGE` (major) commits since the last tag. No manual edit of `VERSION` is required.
 - **VERSION file**: Root file `VERSION` is stamped by PSR (format `version=X.Y.Z`). To read the version in scripts, use the whole line or strip the `version=` prefix.
-- **Tag & release**: PSR creates the git tag and GitHub release; the workflow attaches `agentickube-deploy.zip` (Agent CRD, Orchestrator CRD, example RBAC, operator, example Agent, example Orchestrator) to the release.
+- **Tag & release**: PSR creates the git tag and GitHub release; the workflow publishes the Helm chart to GHCR OCI (`oci://ghcr.io/juliusharing/agentickube/chart`). Install with `helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart`.
 
 Local: `task version:current` prints the current version.
 
@@ -24,8 +24,8 @@ Use [Task](https://taskfile.dev/) and [uv](https://docs.astral.sh/uv/) for a rep
   ```
   (Installs from `environments/all-requirements.txt`.)
 - **Lint/format**: `task dev:all` runs install, format, and lint-fix.
-- **CRDs and examples (generated from models)**: The [Agent CRD](deploy/agent-crd.yaml), [Orchestrator CRD](deploy/orchestrator-crd.yaml), and example manifests are generated from the operator's Pydantic models in [`code/operator/models.py`](code/operator/models.py). That way the spec lives in one place: change the models, run `task operator:generate`, and the CRDs and example manifests stay in sync. Deploy runs this task automatically; CI and CD run the same `task operator:generate` (CI validates the generated YAML, CD regenerates before building the release zip).
-- **Deploy (local)**: `task deploy` runs dev:all, builds the agent, operator, and orchestrator images, creates the `agentickube-ns` namespace, applies the CRDs, clears and reapplies manifests and the example Agent. Run the operator separately (e.g. `task operator:run`) so it watches for Agent and Orchestrator CRs.
+- **CRDs (generated from models)**: The Agent and Orchestrator CRDs are generated from the operator's Pydantic models in [`code/operator/models.py`](code/operator/models.py) into [chart/agentickube/templates/](chart/agentickube/templates/). Change the models, run `task operator:generate`, and the chart CRDs stay in sync. Deploy runs this task automatically; CI and CD run the same before validating or publishing the Helm chart.
+- **Deploy (local)**: `task deploy` runs dev:all, builds the agent, operator, and orchestrator images, creates the `agentickube-ns` namespace, then installs/upgrades the Helm chart with [values-dev.yaml](chart/agentickube/values-dev.yaml) (Ollama, OTEL, Jaeger, example Agent and Orchestrator). Run the operator separately (e.g. `task operator:run`) for out-of-cluster watching, or `task agent:run` for a local agent. For a minimal install without the dev stack, use `task chart:install-local`.
 
 **Kubernetes in Docker Desktop**  
 For local development you can use the Kubernetes cluster built into [Docker Desktop](https://www.docker.com/products/docker-desktop/): enable it under **Settings → Kubernetes → Enable Kubernetes**, then ensure `kubectl` is available (Docker Desktop adds it to your path); the cluster will pull images from GHCR or use images you build locally (e.g. after `task deploy`).

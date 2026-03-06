@@ -1,0 +1,81 @@
+# Example values for local/dev: Ollama + OTEL + Jaeger + one Agent + one Orchestrator.
+# Usage: helm install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
+# Or:    helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
+
+operator:
+  image:
+    repository: agentickube-operator
+    tag: latest
+    pullPolicy: IfNotPresent
+
+ollama:
+  enabled: true
+  model: qwen3:1.7b
+  pvc:
+    size: 2Gi
+
+otel:
+  enabled: true
+
+jaeger:
+  enabled: true
+
+agentImage:
+  repository: agentickube-agent
+  tag: latest
+  pullPolicy: IfNotPresent
+
+orchestratorImage:
+  repository: agentickube-orchestrator
+  tag: latest
+  pullPolicy: IfNotPresent
+
+workspacePvc:
+  create: true
+  name: agent-workspace-pvc
+  size: 1Gi
+
+agents:
+  - name: my-agent
+    spec:
+      image: agentickube-agent:latest
+      imagePullPolicy: IfNotPresent
+      description: General-purpose development agent
+      llm:
+        modelName: qwen3:1.7b
+        baseUrl: http://ollama:11434/v1
+      prompts:
+        systemPrompt: test
+      workspace:
+        path: /workspace
+        persistentVolumeClaim:
+          claimName: agent-workspace-pvc
+      conversation:
+        enabled: true
+        maxHistory: 10
+      openTelemetry:
+        enabled: true
+        endpoint: http://otel-collector:4318
+        serviceName: my-agent
+        samplingRatio: 1.0
+
+orchestrators:
+  - name: my-orchestrator
+    spec:
+      image: agentickube-orchestrator:latest
+      imagePullPolicy: IfNotPresent
+      description: Dev orchestrator coordinating my-agent
+      llm:
+        modelName: qwen3:1.7b
+        baseUrl: http://ollama:11434/v1
+      agents:
+        - name: my-agent
+          description: General-purpose development agent
+      strategy:
+        type: sequence
+        maxRounds: 10
+      openTelemetry:
+        enabled: true
+        endpoint: http://otel-collector:4318
+        serviceName: my-orchestrator
+        samplingRatio: 1.0
