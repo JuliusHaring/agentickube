@@ -2,6 +2,32 @@
 
 <!-- version list -->
 
+## v3.0.2 (2026-03-09)
+
+### Bug Fixes
+
+- Make sequence work with all agents and log any not working agents
+  ([`3887fd6`](https://github.com/JuliusHaring/agentickube/commit/3887fd6318ddff3cddd332d663a88c531ee00fc2))
+
+### Chores
+
+- Add session id to otel spans
+  ([`2acfa11`](https://github.com/JuliusHaring/agentickube/commit/2acfa1151f4fbf2be0240af38f181dcbc619204b))
+
+### Documentation
+
+- Add more info on commit naming and branch naming in CONTRIBUTING.md
+  ([`4d13070`](https://github.com/JuliusHaring/agentickube/commit/4d13070b85ee18b5315eef3435c51a4f36907e37))
+
+### Refactoring
+
+- Make session_id a header
+  ([`1c2bab0`](https://github.com/JuliusHaring/agentickube/commit/1c2bab011b197a65b1d6fc62eef735856f71e55d))
+
+- Put session ids in header for orchestrator
+  ([`1885461`](https://github.com/JuliusHaring/agentickube/commit/1885461fa9f2d6ace96b8a1187487af08f8e6121))
+
+
 ## v3.0.1 (2026-03-06)
 
 ### Bug Fixes
