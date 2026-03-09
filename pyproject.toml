@@ -5,6 +5,9 @@ description = "Agent and operator for Kubernetes"
 readme = "README.md"
 license = "MIT"
 
+[tool.ty.src]
+include = ["code"]
+
 [tool.semantic_release]
 branch = "main"
 version_variables = ["VERSION:version:nf"]
