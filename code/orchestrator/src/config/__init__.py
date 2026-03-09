@@ -4,7 +4,11 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
 
+from shared.logging import get_logger
 from shared.llm import LLMConfig  # noqa: F401
+
+
+logger = get_logger(__name__)
 
 
 class AgentEndpoint(BaseModel):
@@ -39,18 +43,27 @@ class OrchestratorCLIConfig(OrchestratorConfig):
 
 def _agents_from_env() -> list[dict]:
     """Read agent endpoints from numbered env vars (ORCHESTRATOR_AGENT_1_NAME, _URL, _DESCRIPTION, ...).
-    Pydantic-settings can't handle dynamic numbered keys, so we read them explicitly."""
+    Pydantic-settings can't handle dynamic numbered keys, so we read them explicitly.
+    Skips any entry with empty URL (operator must set ORCHESTRATOR_AGENT_*_URL)."""
     agents = []
     i = 1
     while True:
         name = os.environ.get(f"ORCHESTRATOR_AGENT_{i}_NAME")
         if not name:
             break
-        url = os.environ.get(f"ORCHESTRATOR_AGENT_{i}_URL", "")
+        url = (os.environ.get(f"ORCHESTRATOR_AGENT_{i}_URL") or "").strip()
         description = os.environ.get(f"ORCHESTRATOR_AGENT_{i}_DESCRIPTION", "")
-        agents.append(
-            {"name": name.strip(), "url": url.strip(), "description": description}
-        )
+        if not url:
+            logger.warning(
+                "Skipping agent %d (%s): ORCHESTRATOR_AGENT_%d_URL is empty",
+                i,
+                name.strip(),
+                i,
+            )
+        else:
+            agents.append(
+                {"name": name.strip(), "url": url, "description": description}
+            )
         i += 1
     return agents
 

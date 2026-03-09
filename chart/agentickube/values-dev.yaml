@@ -47,13 +47,15 @@ agents:
       imagePullPolicy: IfNotPresent
       llm: *llm
       skills:
-        builtinSkills: [create-skill]
+        builtinSkills: [create-skill, fetch-stocks]
       prompts:
         systemPrompt: |
-          You are the first step in a stock-analytics pipeline. You are the only agent that fetches live stock data; the analysts that run after you will use your output only.
-          Use the skill "fetch-stocks" to fetch the stock data. If it doesn't exist, create it using the "create-skill" skill.
+          You are the first step in a stock-analytics pipeline. Your ONLY job is to fetch stock data and return it. The next agents do risk analysis and buy/sell reasoning—you do not. You only fetch and output data.
 
-          Your job: fetch and return stock data (prices, top movers/gainers/losers, etc.) when asked. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
+          RULE: If the user mentions a ticker (e.g. TSLA) or "fetch" or "current price", call the fetch-stocks skill immediately. Your reply must be the fetched data only. FORBIDDEN: Do NOT say "Would you like me to fetch", "I can fetch", or ask any question—just call the tool and return the result. Any response that does not contain actual price/data fails the pipeline.
+
+          Use the skill "fetch-stocks" to fetch the stock data. If it doesn't exist, create it using the "create-skill" skill. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
+          When the user asks about a specific ticker (e.g. TSLA, AAPL) or "current price" or "today": (1) Fetch the latest quote now—do not use cached or session-old data. (2) Always include the exact current price in USD and the date/time of the quote (e.g. "Current price: $XXX.XX USD as of [date and time] from [source]"). (3) If the only data available is delayed or previous close, say so clearly (e.g. "Last close: $X.XX" or "Delayed quote as of [time]").
       workspace:
         path: /workspace
         persistentVolumeClaim:
@@ -109,7 +111,9 @@ agents:
         systemPrompt: |
           You are the momentum/technical analyst in a stock-analytics pipeline. Your input will be the user question plus "Previous agent" response(s) with stock data and risk view. Do not fetch data yourself.
 
-          Your only job: output a short momentum/technical analysis (trends, relative strength, what might be driving the moves). Do NOT repeat the mover list or re-answer "top 3 movers". Output only your analysis so the pipeline gets your added value.
+          Your job: output a short momentum/technical analysis (trends, relative strength, what might be driving the moves). Do NOT repeat the mover list or re-answer "top 3 movers". Output only your analysis so the pipeline gets your added value.
+          When the user asked for "current price" or "price in USD", include one line at the top: "**Current price (from data):** $X.XX USD" using the price from the previous step's data.
+          When the user asked for a buy/sell or recommendation, end your response with a single line: "**Conclusion:** Buy / Sell / Hold — [one sentence reasoning]." You may add "This is not financial advice." after it. Give a clear conclusion based on the data and your analysis.
       workspace:
         path: /workspace
         persistentVolumeClaim:

@@ -44,9 +44,17 @@ async def query_agent(
         async with httpx.AsyncClient(timeout=timeout) as client:
             logger.info("Calling agent at %s", url)
             resp = await client.post(url, json=body, headers=headers)
-            resp.raise_for_status()
+            span.set_attribute("http.status_code", resp.status_code)
+            if not resp.is_success:
+                body_preview = (resp.text or "")[:2000]
+                logger.error(
+                    "Agent %s returned %s: %s",
+                    agent_name or url,
+                    resp.status_code,
+                    body_preview,
+                )
+                resp.raise_for_status()
             data = resp.json()
 
-        span.set_attribute("http.status_code", resp.status_code)
         session_from_agent = resp.headers.get(SESSION_HEADER)
         return (data["response"], session_from_agent)

@@ -43,6 +43,7 @@ def _query(
     if span.is_recording() and session_id:
         span.set_attribute("session.id", session_id)
     result = agent_loop(query=request.query, session_id=session_id)
+    logger.info("Query response: %s", result)
     body = QueryResponse(response=result).model_dump()
     headers = {SESSION_HEADER: session_id} if session_id else {}
     return JSONResponse(content=body, headers=headers)

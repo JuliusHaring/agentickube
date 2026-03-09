@@ -14,8 +14,22 @@ def extract_steps_from_run(result: ModelResponse) -> list[dict]:
         for part in parts:
             part_type = type(part).__name__
             if "ToolCall" in part_type or "tool_call" in str(part_type):
-                pending_calls.append((part.tool, part.args))
-            elif "ToolResult" in part_type or "tool_result" in str(part_type):
-                tool, args = pending_calls.pop()
-                steps.append({"tool": tool, "args": args, "result": part.content})
+                tool = getattr(part, "tool_name", None) or getattr(part, "tool", None)
+                args = getattr(part, "args_as_dict", None)
+                if callable(args):
+                    args = args()
+                else:
+                    args = getattr(part, "args", None)
+                if tool is not None:
+                    pending_calls.append((tool, args if args is not None else {}))
+            elif (
+                "ToolResult" in part_type
+                or "tool_result" in part_type
+                or "ToolReturn" in part_type
+                or "tool_return" in part_type
+            ):
+                if pending_calls:
+                    tool, args = pending_calls.pop()
+                    content = getattr(part, "content", None)
+                    steps.append({"tool": tool, "args": args, "result": content})
     return steps
