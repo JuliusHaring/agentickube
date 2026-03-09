@@ -1,6 +1,8 @@
 from typing import Optional
 
 from fastapi import APIRouter
+from fastapi.params import Header
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
 from logic.orchestrator import orchestrate
@@ -10,22 +12,27 @@ logger = get_logger(__name__)
 
 router = APIRouter(prefix="/query")
 
+SESSION_HEADER = "X-Session-Id"
+
 
 class QueryRequest(BaseModel):
     query: str
-    session_id: Optional[str] = None
-    """Optional. When provided, forwarded to agents for their conversation memory."""
 
 
 class QueryResponse(BaseModel):
     response: str
-    session_id: Optional[str] = None
-    """Pass-through from request, or the one returned by an agent when it created a new session."""
 
 
 @router.post("")
-def _query(request: QueryRequest) -> QueryResponse:
-    session_id = (request.session_id or "").strip() or None
+def _query(
+    request: QueryRequest,
+    session_id: Optional[str] = Header(
+        default=None,
+        alias=SESSION_HEADER,
+        description="Session ID. Optional. Forwarded to agents for conversation memory.",
+    ),
+) -> JSONResponse:
+    session_id = (session_id or "").strip() or None
     logger.info(
         "Query received: session_id=%s query=%s",
         session_id,
@@ -39,7 +46,10 @@ def _query(request: QueryRequest) -> QueryResponse:
 
     if effective_session_id and effective_session_id != session_id:
         logger.info("Received new session_id %s from agent", effective_session_id)
-    return QueryResponse(
-        response=result,
-        session_id=effective_session_id or session_id,
-    )
+
+    body = QueryResponse(response=result).model_dump()
+    headers = {}
+    sid = effective_session_id or session_id
+    if sid:
+        headers[SESSION_HEADER] = sid
+    return JSONResponse(content=body, headers=headers)

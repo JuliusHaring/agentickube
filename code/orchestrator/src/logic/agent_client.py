@@ -9,6 +9,7 @@ from shared.logging import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_TIMEOUT = 300.0
+SESSION_HEADER = "X-Session-Id"
 
 _tracer = trace.get_tracer(__name__)
 
@@ -22,6 +23,7 @@ async def query_agent(
 ) -> tuple[str, str | None]:
     """Call agent /query. Returns (response_text, session_id_from_agent or None).
 
+    Sends and receives session ID via the X-Session-Id header, same as the agent API.
     When OTEL is configured, creates a span for the call and propagates
     W3C trace context (traceparent) so the agent's spans become children.
     """
@@ -34,11 +36,10 @@ async def query_agent(
         },
     ) as span:
         body: dict = {"query": query}
-        if session_id:
-            body["session_id"] = session_id
-
         headers: dict[str, str] = {}
         inject(headers)
+        if session_id:
+            headers[SESSION_HEADER] = session_id
 
         async with httpx.AsyncClient(timeout=timeout) as client:
             logger.info("Calling agent at %s", url)
@@ -47,4 +48,5 @@ async def query_agent(
             data = resp.json()
 
         span.set_attribute("http.status_code", resp.status_code)
-        return (data["response"], data.get("session_id"))
+        session_from_agent = resp.headers.get(SESSION_HEADER)
+        return (data["response"], session_from_agent)
