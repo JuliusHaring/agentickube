@@ -1,4 +1,3 @@
-from typing import Optional
 import uuid
 from opentelemetry import trace
 from fastapi import APIRouter

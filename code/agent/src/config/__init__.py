@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -14,8 +13,8 @@ class MCPServerConfig(BaseModel):
 
 
 class AgentConfig(BaseSettings):
-    agent_name: Optional[str] = Field(default=None, validation_alias="AGENT_NAME")
-    system_prompt: Optional[str] = Field(default=None, validation_alias="SYSTEM_PROMPT")
+    agent_name: str | None = Field(default=None, validation_alias="AGENT_NAME")
+    system_prompt: str | None = Field(default=None, validation_alias="SYSTEM_PROMPT")
     mcp_servers: list[MCPServerConfig] = []
     workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
     conversation_memory_enabled: bool = Field(
@@ -32,7 +31,7 @@ class AgentConfig(BaseSettings):
         """Runtime skills directory — always inside the workspace."""
         return str(Path(self.workspace_dir) / "skills")
 
-    builtin_skills: Optional[list[str]] = Field(
+    builtin_skills: list[str] | None = Field(
         default=None, validation_alias="BUILTIN_SKILLS"
     )
 
@@ -63,7 +62,7 @@ class AgentConfig(BaseSettings):
 
 
 class AgentCLIConfig(AgentConfig):
-    agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
+    agent_query: str | None = Field(default=None, validation_alias="AGENT_QUERY")
 
 
 def _mcp_servers_from_env() -> list[dict]:

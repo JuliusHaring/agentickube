@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter
 from fastapi.params import Header
 from fastapi.responses import JSONResponse

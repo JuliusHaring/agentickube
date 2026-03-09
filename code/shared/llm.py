@@ -3,7 +3,7 @@
 Used by both the agent and orchestrator images.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -33,7 +33,7 @@ class LLMConfig(BaseSettings):
 
     provider: Literal["openai", "google", "huggingface", "ollama"] = "openai"
     model_name: str
-    base_url: Optional[str] = None
+    base_url: str | None = None
     api_key: str = ""
 
 
