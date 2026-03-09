@@ -6,6 +6,8 @@ Thanks for your interest in contributing. This document covers versioning and lo
 
 Versions are managed by [python-semantic-release](https://python-semantic-release.readthedocs.io/).
 
+- **Branches**: Name branches after the change type and a short slug, e.g. `feat/feature-a`, `fix/issue-123`, `fix/typo-readme`. This aligns with the conventional types PSR uses for version bumps.
+- **Commits**: Use imperative mood in the subject line (e.g. "fix validation to allow empty builtin_skills" or "add CONTRIBUTING section on commits"), not past tense ("fixed validation" / "added section").
 - **Bump**: On push to `main`, PSR looks at commit messages (conventional commits) and bumps the version only when there are `feat` (minor), `fix` (patch), or `BREAKING CHANGE` (major) commits since the last tag. No manual edit of `VERSION` is required.
 - **VERSION file**: Root file `VERSION` is stamped by PSR (format `version=X.Y.Z`). To read the version in scripts, use the whole line or strip the `version=` prefix.
 - **Tag & release**: PSR creates the git tag and GitHub release; the workflow publishes the Helm chart to GHCR OCI (`oci://ghcr.io/juliusharing/agentickube/chart`). Install with `helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart`.
