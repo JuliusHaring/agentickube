@@ -28,13 +28,13 @@ async def query_agent(
     W3C trace context (traceparent) so the agent's spans become children.
     """
     span_name = f"call_agent {agent_name}" if agent_name else "call_agent"
-    with _tracer.start_as_current_span(
-        span_name,
-        attributes={
-            "agent.name": agent_name or "",
-            "agent.url": url,
-        },
-    ) as span:
+    attrs: dict[str, str | int] = {
+        "agent.name": agent_name or "",
+        "agent.url": url,
+    }
+    if session_id:
+        attrs["session.id"] = session_id
+    with _tracer.start_as_current_span(span_name, attributes=attrs) as span:
         body: dict = {"query": query}
         headers: dict[str, str] = {}
         inject(headers)

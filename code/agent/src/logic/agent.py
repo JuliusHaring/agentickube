@@ -1,3 +1,4 @@
+from opentelemetry import trace
 from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
@@ -10,6 +11,7 @@ from logic.tools import assemble_toolsets
 from shared.logging import get_logger
 
 logger = get_logger(__name__)
+_tracer = trace.get_tracer(__name__)
 
 
 def _build_agent() -> Agent:
@@ -29,16 +31,33 @@ def agent_loop(query: str, session_id: str | None = None) -> str:
     )
     history = get_history(session_id)
 
+    attrs: dict[str, str | int] = {}
+    if session_id:
+        attrs["session.id"] = session_id
+
     try:
         skills = skills_prompt()
         logger.info("Skills loaded for context (not in user prompt)")
 
         message_history = history_to_model_messages(history)
-        res = _build_agent().run_sync(
-            user_prompt=query,
-            message_history=message_history or None,
-            instructions=skills if skills else None,
-        )
+        with _tracer.start_as_current_span("agent_run", attributes=attrs) as span:
+            res = _build_agent().run_sync(
+                user_prompt=query,
+                message_history=message_history or None,
+                instructions=skills if skills else None,
+            )
+            try:
+                usage = res.usage()
+            except Exception:
+                usage = None
+            if usage is not None:
+                inp = getattr(usage, "input_tokens", None)
+                out = getattr(usage, "output_tokens", None)
+                if inp is not None:
+                    span.set_attribute("gen_ai.usage.input_tokens", inp)
+                if out is not None:
+                    span.set_attribute("gen_ai.usage.output_tokens", out)
+
         output = res.output
 
         steps = extract_steps_from_run(res)

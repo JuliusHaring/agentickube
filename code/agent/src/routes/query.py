@@ -1,5 +1,6 @@
 from typing import Optional
 import uuid
+from opentelemetry import trace
 from fastapi import APIRouter
 from fastapi.params import Header
 from fastapi.responses import JSONResponse
@@ -38,6 +39,9 @@ def _query(
     logger.info(
         "Query received: query=%s and session_id=%s", request.query[:80], session_id
     )
+    span = trace.get_current_span()
+    if span.is_recording() and session_id:
+        span.set_attribute("session.id", session_id)
     result = agent_loop(query=request.query, session_id=session_id)
     body = QueryResponse(response=result).model_dump()
     headers = {SESSION_HEADER: session_id} if session_id else {}

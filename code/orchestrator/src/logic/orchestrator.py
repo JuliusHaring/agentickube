@@ -44,14 +44,14 @@ def orchestrate(
     except Exception:
         llm_config = None
 
-    with _tracer.start_as_current_span(
-        "orchestrate",
-        attributes={
-            "orchestrator.name": cfg.orchestrator_name or "",
-            "orchestrator.strategy": strategy_name,
-            "orchestrator.agents": [a.name for a in cfg.agents],
-        },
-    ):
+    attrs = {
+        "orchestrator.name": cfg.orchestrator_name or "",
+        "orchestrator.strategy": strategy_name,
+        "orchestrator.agents": [a.name for a in cfg.agents],
+    }
+    if session_id:
+        attrs["session.id"] = session_id
+    with _tracer.start_as_current_span("orchestrate", attributes=attrs):
         result, effective_session_id = asyncio.run(
             strategy_fn(
                 query=query,
