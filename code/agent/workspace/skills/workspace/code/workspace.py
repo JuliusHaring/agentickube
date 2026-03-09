@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from config import agent_config
+from src.config import agent_config
 
 
 def _resolve_path(relative_path: str) -> Path:

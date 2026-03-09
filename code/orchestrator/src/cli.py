@@ -43,7 +43,7 @@ def main() -> int:
 
         provider = trace.get_tracer_provider()
         if hasattr(provider, "force_flush"):
-            provider.force_flush(timeout_millis=5000)
+            provider.force_flush(timeout_millis=5000)  # type: ignore[call-non-callable]
     except Exception:
         pass
 

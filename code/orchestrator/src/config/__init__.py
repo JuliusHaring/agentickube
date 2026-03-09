@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 class AgentEndpoint(BaseModel):
     name: str
     url: str
+    description: Optional[str] = None
 
 
 class OrchestratorConfig(BaseSettings):
@@ -28,7 +29,7 @@ class OrchestratorConfig(BaseSettings):
 
     @field_validator("agents", mode="before")
     @classmethod
-    def parse_agents(cls, v: object) -> list[dict]:
+    def parse_agents(cls, v: object) -> list:
         agents = _agents_from_env()
         if agents:
             return agents

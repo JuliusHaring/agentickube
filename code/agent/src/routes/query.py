@@ -28,7 +28,7 @@ class QueryResponse(BaseModel):
 @router.post("")
 def _query(
     request: QueryRequest,
-    session_id: Optional[str] = Header(
+    session_id: str | None = Header(  # type:ignore[invalid-parameter-default]
         default_factory=lambda: (
             uuid.uuid4().hex if agent_config.conversation_memory_enabled else None
         ),

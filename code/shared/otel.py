@@ -82,7 +82,7 @@ def setup_fastapi_opentelemetry(
             try:
                 provider = trace.get_tracer_provider()
                 if hasattr(provider, "force_flush"):
-                    provider.force_flush(timeout_millis=3000)
+                    provider.force_flush(timeout_millis=3000)  # type: ignore[call-non-callable]
             except Exception:
                 pass
             return response

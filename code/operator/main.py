@@ -95,7 +95,7 @@ def _cleanup_agent_other_kinds(name: str, namespace: str, keep: str) -> None:
 # ── Agent Kopf handlers ─────────────────────────────────────────────────────
 
 
-@kopf.on.create(AGENT_CRD_GROUP)
+@kopf.on.create(AGENT_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     agent = AgentSpec.model_validate(spec)
     has_inline_cm = ensure_agent_skills_cm(name, namespace, agent, body)
@@ -116,7 +116,7 @@ def create_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None
         logger.info("Deployment + Service created: %s", obj.metadata.name)
 
 
-@kopf.on.update(AGENT_CRD_GROUP)
+@kopf.on.update(AGENT_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def update_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     agent = AgentSpec.model_validate(spec)
     has_inline_cm = ensure_agent_skills_cm(name, namespace, agent, body)
@@ -162,7 +162,7 @@ def update_agent(spec: dict, name: str, namespace: str, body: dict, **_) -> None
         ensure_agent_service(name, namespace, body)
 
 
-@kopf.on.delete(AGENT_CRD_GROUP)
+@kopf.on.delete(AGENT_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def delete_agent(name: str, namespace: str, **_) -> None:
     for kind in ("deployment", "job", "cronjob"):
         _delete_agent_resource(name, namespace, kind)
@@ -205,7 +205,7 @@ def _cleanup_orch_other_kinds(name: str, namespace: str, keep: str) -> None:
 # ── Orchestrator Kopf handlers ──────────────────────────────────────────────
 
 
-@kopf.on.create(ORCHESTRATOR_CRD_GROUP)
+@kopf.on.create(ORCHESTRATOR_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def create_orchestrator(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     orch = OrchestratorSpec.model_validate(spec)
     ttype = _orch_trigger_type(orch)
@@ -225,7 +225,7 @@ def create_orchestrator(spec: dict, name: str, namespace: str, body: dict, **_) 
         logger.info("Orchestrator Deployment + Service created: %s", obj.metadata.name)
 
 
-@kopf.on.update(ORCHESTRATOR_CRD_GROUP)
+@kopf.on.update(ORCHESTRATOR_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def update_orchestrator(spec: dict, name: str, namespace: str, body: dict, **_) -> None:
     orch = OrchestratorSpec.model_validate(spec)
     ttype = _orch_trigger_type(orch)
@@ -270,7 +270,7 @@ def update_orchestrator(spec: dict, name: str, namespace: str, body: dict, **_) 
         ensure_orchestrator_service(name, namespace, body)
 
 
-@kopf.on.delete(ORCHESTRATOR_CRD_GROUP)
+@kopf.on.delete(ORCHESTRATOR_CRD_GROUP)  # type: ignore[invalid-argument-type]
 def delete_orchestrator(name: str, namespace: str, **_) -> None:
     for kind in ("deployment", "job", "cronjob"):
         _delete_orch_resource(name, namespace, kind)

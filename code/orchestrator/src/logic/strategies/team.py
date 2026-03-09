@@ -36,7 +36,7 @@ async def run_team(
     llm_config: LLMConfig | None = None,
     session_id: str | None = None,
     **_,
-) -> str:
+) -> tuple[str, str | None]:
     model = get_model(llm_config)
     agent_map = {a.name: a for a in agents}
     roster = _agent_roster(agents)

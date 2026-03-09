@@ -133,7 +133,7 @@ def build_container_sc(spec: _SpecType) -> client.V1SecurityContext | None:
         return None
     caps = None
     if sc.capabilities:
-        caps = client.V1SecurityCapabilities(
+        caps = client.V1SecurityCapabilities(  # type: ignore[unresolved-attribute]
             add=sc.capabilities.add or [], drop=sc.capabilities.drop or []
         )
     return client.V1SecurityContext(

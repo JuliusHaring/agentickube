@@ -54,7 +54,7 @@ def _json_schema_to_openapi(schema: dict) -> dict:
     return schema
 
 
-def _inline_refs(obj: dict, definitions: dict) -> dict:
+def _inline_refs(obj: dict, definitions: dict) -> dict | list:
     """Recursively replace $ref with a copy of the referenced definition. K8s CRD does not support $ref."""
     if isinstance(obj, dict):
         if list(obj.keys()) == ["$ref"]:

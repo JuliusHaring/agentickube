@@ -53,7 +53,7 @@ class AgentConfig(BaseSettings):
 
     @field_validator("mcp_servers", mode="before")
     @classmethod
-    def parse_mcp_servers(cls, v: object) -> list[dict]:
+    def parse_mcp_servers(cls, v: object) -> list:
         servers = _mcp_servers_from_env()
         if servers:
             return servers
@@ -81,5 +81,5 @@ def _mcp_servers_from_env() -> list[dict]:
     return servers
 
 
-llm_config = LLMConfig()
+llm_config = LLMConfig()  # type: ignore - managed by pydantic settings
 agent_config = AgentConfig()

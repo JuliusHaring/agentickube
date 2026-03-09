@@ -180,7 +180,7 @@ def build_orchestrator_deployment(
             template=template,
         ),
     )
-    kopf.append_owner_reference(deployment, body)
+    kopf.append_owner_reference(deployment, body)  # type: ignore[invalid-argument-type]
     kopf.label(deployment, nested="spec.template")
     return deployment
 
@@ -213,7 +213,7 @@ def build_orchestrator_job(
             ttl_seconds_after_finished=trigger.ttl_seconds_after_finished,
         ),
     )
-    kopf.append_owner_reference(job, body)
+    kopf.append_owner_reference(job, body)  # type: ignore[invalid-argument-type]
     return job
 
 
@@ -251,7 +251,7 @@ def build_orchestrator_cronjob(
             ),
         ),
     )
-    kopf.append_owner_reference(cronjob, body)
+    kopf.append_owner_reference(cronjob, body)  # type: ignore[invalid-argument-type]
     return cronjob
 
 
@@ -272,7 +272,7 @@ def _build_orchestrator_service(
             ports=[client.V1ServicePort(port=80, target_port=80)],
         ),
     )
-    kopf.append_owner_reference(svc, body)
+    kopf.append_owner_reference(svc, body)  # type: ignore[invalid-argument-type]
     return svc
 
 
