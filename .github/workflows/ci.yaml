@@ -28,6 +28,24 @@ jobs:
       - name: Ruff lint
         run: ruff check .
 
+  type:
+    name: Type check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install project + dev dependencies
+        run: pip install -r environments/all-requirements.txt
+
+      - name: ty check
+        run: ty check .
+
   manifests:
     name: Generate and validate manifests
     runs-on: ubuntu-latest
