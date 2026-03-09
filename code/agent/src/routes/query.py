@@ -1,63 +1,39 @@
 from typing import Optional
+import uuid
 from fastapi import APIRouter
+from fastapi.params import Header
 from pydantic import BaseModel
 
-from logic.agent import agent_loop
-from logic.sessions import get_session_id
-from shared.logging import get_logger
 from config import agent_config
+from logic.agent import agent_loop
+from shared.logging import get_logger
 
 logger = get_logger(__name__)
 
 router = APIRouter(prefix="/query")
 
 
-class BaseQueryRequest(BaseModel):
+class QueryRequest(BaseModel):
     query: str
 
 
-class QueryRequestWithSessionId(BaseQueryRequest):
-    session_id: Optional[str] = None
-    """Only allowed when spec.conversation.enabled is true. Must be a valid UUID."""
-
-
-class BaseQueryResponse(BaseModel):
+class QueryResponse(BaseModel):
     response: str
-
-
-class QueryResponseWithSessionId(BaseQueryResponse):
-    session_id: str
 
 
 @router.post("")
 def _query(
-    request: QueryRequestWithSessionId
-    if agent_config.conversation_memory_enabled
-    else BaseQueryRequest,
-) -> (
-    QueryResponseWithSessionId
-    if agent_config.conversation_memory_enabled
-    else BaseQueryResponse
-):
-    if not agent_config.conversation_memory_enabled:
-        logger.info("Query received: use_memory=False query=%s", request.query[:80])
-        session_id = None
-    else:
-        session_id = get_session_id(request.session_id)
-        logger.info(
-            "Query received: use_memory=True session_id=%s query=%s",
-            session_id,
-            request.query[:80],
-        )
-
-    res = agent_loop(
-        query=request.query,
-        use_memory=agent_config.conversation_memory_enabled,
-        session_id=session_id,
+    request: QueryRequest,
+    session_id: Optional[str] = Header(
+        default_factory=lambda: (
+            uuid.uuid4().hex if agent_config.conversation_memory_enabled else None
+        ),
+        alias="X-Session-Id",
+        description="Session ID. Optional. Only used when conversation_memory is enabled.",
+    ),
+) -> QueryResponse:
+    logger.info(
+        "Query received: query=%s and session_id=%s", request.query[:80], session_id
     )
-    logger.info("Query response: %s", res[:80] if len(res) > 80 else res)
-    return (
-        QueryResponseWithSessionId(response=res, session_id=session_id)
-        if agent_config.conversation_memory_enabled
-        else BaseQueryResponse(response=res)
-    )
+    result = agent_loop(query=request.query, session_id=session_id)
+    return QueryResponse(response=result)

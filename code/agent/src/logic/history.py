@@ -9,13 +9,14 @@ from pydantic_ai.messages import (
     UserPromptPart,
 )
 
-from logic.sessions import HistoryMessage, load_history, save_history
+from shared.session import HistoryMessage, load_history, save_history
+from config import agent_config
 
 
-def get_history(session_id: str | None, use_memory: bool) -> list[HistoryMessage]:
+def get_history(session_id: str | None) -> list[HistoryMessage]:
     """Return loaded history when use_memory and session_id are set, otherwise []."""
-    if use_memory and session_id:
-        return load_history(session_id)
+    if agent_config.conversation_memory_enabled and session_id:
+        return load_history(agent_config.workspace_dir, session_id)
     return []
 
 
@@ -61,4 +62,4 @@ def record_turn(
         trimmed = history[-max_messages:]
         history.clear()
         history.extend(trimmed)
-    save_history(session_id, history)
+    save_history(agent_config.workspace_dir, session_id, history)

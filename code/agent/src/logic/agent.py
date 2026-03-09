@@ -2,7 +2,7 @@ from pydantic_ai import Agent
 from pydantic_ai.exceptions import UnexpectedModelBehavior
 
 from logic.history import get_history, history_to_model_messages, record_turn
-from logic.sessions import extract_steps_from_run
+from logic.session import extract_steps_from_run
 from config import agent_config
 from logic.providers import get_model
 from logic.prompt import agent_instructions, skills_prompt
@@ -21,14 +21,13 @@ def _build_agent() -> Agent:
     )
 
 
-def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> str:
+def agent_loop(query: str, session_id: str | None = None) -> str:
     logger.info(
-        "Agent loop started: use_memory=%s session_id=%s query=%s",
-        use_memory,
+        "Agent loop started: session_id=%s query=%s",
         session_id,
         len(query) > 80 and query[:80] + "... [truncated]" or query,
     )
-    history = get_history(session_id, use_memory)
+    history = get_history(session_id)
 
     try:
         skills = skills_prompt()
@@ -43,7 +42,7 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
         output = res.output
 
         steps = extract_steps_from_run(res)
-        if use_memory and session_id:
+        if agent_config.conversation_memory_enabled and session_id:
             try:
                 new_messages = list(res.new_messages())
             except Exception:
@@ -54,7 +53,7 @@ def agent_loop(query: str, use_memory: bool, session_id: str | None = None) -> s
                 query,
                 output,
                 steps if steps else None,
-                max(1, agent_config.conversation_max_history),
+                agent_config.conversation_max_history,
                 new_messages=new_messages,
             )
 
