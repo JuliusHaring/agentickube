@@ -3,7 +3,7 @@
 
 # AgenticKube
 
-[Star History Chart](https://www.star-history.com/?repos=JuliusHaring%2Fagentickube&type=date&legend=top-left)
+[![Star History Chart](https://api.star-history.com/image?repos=JuliusHaring/agentickube&type=date&legend=bottom-right)](https://www.star-history.com/?repos=JuliusHaring%2Fagentickube&type=date&legend=bottom-right)
 
 **🤖 Agents in Kubernetes — declarative, yours, no lock-in.**
 
