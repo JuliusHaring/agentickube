@@ -1,0 +1,31 @@
+{{- if and .Values.keycloak.enabled .Values.keycloak.realmImport }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-realm-import
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: keycloak
+data:
+  {{ .Values.keycloak.realm }}-realm.json: |
+    {
+      "realm": "{{ .Values.keycloak.realm }}",
+      "enabled": true,
+      "roles": { "realm": [{ "name": "user" }] },
+      "clients": [
+        {
+          "clientId": "{{ .Values.keycloak.clientId }}",
+          "name": "{{ .Values.keycloak.clientId }}",
+          "enabled": true,
+          "clientAuthenticatorType": "client-secret",
+          "secret": "{{ .Values.keycloak.clientSecret }}",
+          "publicClient": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": true,
+          "protocol": "openid-connect",
+          "redirectUris": ["*"],
+          "webOrigins": ["*"]
+        }
+      ]
+    }
+{{- end }}
