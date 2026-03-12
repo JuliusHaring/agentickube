@@ -2,6 +2,25 @@
 
 <!-- version list -->
 
+## v4.3.0 (2026-03-12)
+
+### Chores
+
+- Make skills detection more verbose
+  ([`8ba3d2e`](https://github.com/JuliusHaring/agentickube/commit/8ba3d2e124babe40f98892d6122b360a81ae095f))
+
+- Remove unused functions from skills detection
+  ([`7759fff`](https://github.com/JuliusHaring/agentickube/commit/7759fff85054a35c0602c7d61ded47ad6ad044fd))
+
+### Features
+
+- Add cleanup job
+  ([`ef49439`](https://github.com/JuliusHaring/agentickube/commit/ef4943978401ec81fda7736485fdd3fa0a2592d6))
+
+- Add metadata discovery for skills and run in bash
+  ([`57bc600`](https://github.com/JuliusHaring/agentickube/commit/57bc6003eae9c1acf099d65bff69394d9ddbe84d))
+
+
 ## v4.2.0 (2026-03-12)
 
 ### Bug Fixes
