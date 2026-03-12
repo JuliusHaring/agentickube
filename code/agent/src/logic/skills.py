@@ -4,7 +4,7 @@ import re
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+from pydantic import BaseModel
 from pathlib import Path
 
 import yaml
@@ -17,8 +17,7 @@ logger = get_logger(__name__)
 SCRIPT_TIMEOUT_SECONDS = 60
 
 
-@dataclass(frozen=True)
-class SkillMetadata:
+class SkillMetadata(BaseModel):
     name: str
     description: str
     dir_name: str
