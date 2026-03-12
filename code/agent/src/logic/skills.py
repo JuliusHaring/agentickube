@@ -25,9 +25,8 @@ def _read_skill(path: Path) -> str | None:
 def _discover_skills(directory: str) -> dict[str, Path]:
     """Discover skills in a directory. Returns {name: path_to_SKILL.md}.
 
-    Supports two layouts:
+    Supports:
       directory/skill-name/SKILL.md  (subdirectory per skill)
-      directory/skill-name.md        (flat file)
     """
     root = Path(directory)
     logger.info(f"Discovering skills in {root}")
@@ -40,8 +39,6 @@ def _discover_skills(directory: str) -> dict[str, Path]:
             skill_md = child / "SKILL.md"
             if skill_md.is_file():
                 skills[child.name] = skill_md
-        elif child.is_file() and child.suffix == ".md":
-            skills[child.stem] = child
     return skills
 
 
@@ -145,17 +142,22 @@ def sync_workspace_from_repo(
     """
     template = Path(template_dir)
     workspace = Path(workspace_dir)
+
+    logger.info(f"Syncing workspace from {template_dir} into {workspace_dir}")
     if not template.is_dir():
-        logger.debug("No workspace template at %s, skipping sync", template_dir)
+        logger.warning("No workspace template at %s, skipping sync", template_dir)
         return
 
+    logger.info(f"Creating workspace directory: {workspace}")
     workspace.mkdir(parents=True, exist_ok=True)
-    logger.info("Syncing workspace from %s into %s", template_dir, workspace_dir)
 
+    logger.info(f"Copying workspace template: {template}")
     for child in sorted(template.iterdir()):
+        logger.info(f"Copying workspace template: {child}")
         if child.name.startswith("."):
             continue
         dest = workspace / child.name
+        logger.info(f"Copying workspace template: {child} to {dest}")
         if child.is_dir():
             shutil.copytree(str(child), str(dest), dirs_exist_ok=True)
         else:
@@ -164,11 +166,14 @@ def sync_workspace_from_repo(
     # If builtin_skills is set (including []), keep only those skills; remove all others.
     skills_dir = Path(agent_config.skills_dir)
     if agent_config.builtin_skills is not None and skills_dir.is_dir():
+        logger.info(f"Keeping builtin skills: {agent_config.builtin_skills}")
         keep = frozenset(agent_config.builtin_skills)
         for child in list(skills_dir.iterdir()):
             if child.is_dir() and child.name not in keep:
+                logger.info(f"Removing skill: {child} (not in builtin_skills)")
                 shutil.rmtree(child)
-                logger.info("Removed skill '%s' (not in builtin_skills)", child.name)
+            else:
+                logger.info(f"Keeping skill: {child} (in builtin_skills)")
 
 
 def load_skills() -> list[str]:
