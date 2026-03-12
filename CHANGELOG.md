@@ -2,6 +2,31 @@
 
 <!-- version list -->
 
+## v4.1.0 (2026-03-12)
+
+### Chores
+
+- Change dev agent prompt
+  ([`82415f9`](https://github.com/JuliusHaring/agentickube/commit/82415f99e0b384280e7684d85ebd6da18d196722))
+
+- Make cz check work against origin main
+  ([`ac7f811`](https://github.com/JuliusHaring/agentickube/commit/ac7f8112c435361e4a4168336e1c2d5f36055b01))
+
+### Features
+
+- Add basic security to agent
+  ([`3bf2b72`](https://github.com/JuliusHaring/agentickube/commit/3bf2b72d85e78b9c7a16f2333f5137d93388e043))
+
+- Add keycloak to chart
+  ([`6dda5da`](https://github.com/JuliusHaring/agentickube/commit/6dda5dac875e154f9e03884cc08d9b47b361b8a7))
+
+- Add security to helm charts
+  ([`f22a759`](https://github.com/JuliusHaring/agentickube/commit/f22a7591f3d74119c6e74c8c5eb033caf1b9a89b))
+
+- Make keycloak work with proper token
+  ([`9aaac2c`](https://github.com/JuliusHaring/agentickube/commit/9aaac2c0fd7ab648607962ff9a4715c13b852ddb))
+
+
 ## v4.0.0 (2026-03-12)
 
 ### Chores
