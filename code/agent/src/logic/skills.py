@@ -117,7 +117,10 @@ def _load_from(
     """Discover and load skills from a directory, optionally filtering by name."""
     found = _discover_skills(directory)
     if filter_names is not None:
+        logger.info("Filtering skills by name: %s", filter_names)
         found = {k: v for k, v in found.items() if k in filter_names}
+    else:
+        logger.info("Loading all skills")
     contents: list[str] = []
     for name, path in found.items():
         text = _read_skill(path)
@@ -173,14 +176,24 @@ def load_skills() -> list[str]:
 
     Built-ins and operator-provided skills are seeded there at startup.
     Agent-created skills are written there at runtime and picked up immediately.
+    When builtin_skills is set, only those skills are loaded (allowlist).
     """
-    contents = _load_from(agent_config.skills_dir, "workspace")
+    filter_names = agent_config.builtin_skills
+    contents = _load_from(
+        agent_config.skills_dir, "workspace", filter_names=filter_names
+    )
     logger.info("Loaded %d skills total", len(contents))
     return contents
 
 
 def load_skill_tools() -> list[Callable]:
-    """Load Python tool functions from {workspace}/skills/."""
-    tools = _load_tools_from(agent_config.skills_dir, "workspace")
+    """Load Python tool functions from {workspace}/skills/.
+
+    When builtin_skills is set, only those skills' tools are loaded (allowlist).
+    """
+    filter_names = agent_config.builtin_skills
+    tools = _load_tools_from(
+        agent_config.skills_dir, "workspace", filter_names=filter_names
+    )
     logger.info("Loaded %d skill tools total", len(tools))
     return tools

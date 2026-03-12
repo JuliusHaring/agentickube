@@ -3,4 +3,5 @@
 !.gitignore
 !skills/
 !skills/**
+!**/*.py*
 __pycache__/

@@ -53,24 +53,9 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      # OAuth2 JWT: agent validates Bearer tokens from Keycloak. Get token via client credentials, then use as Bearer.
-      # issuerUrl lists allowed issuers (comma-separated); include localhost when getting token via port-forward.
-      auth:
-        type: oauth2
-        oauth2:
-          clientId: agent
-          clientSecret: agent-dev-secret
-          tokenUrl: http://keycloak:8080/realms/agentickube/protocol/openid-connect/token
-          issuerUrl: "http://keycloak:8080/realms/agentickube,http://localhost:8080/realms/agentickube"
       llm: *llm
       skills:
-        builtinSkills: [create-skill, workspace]
-      prompts:
-        systemPrompt: |
-          You are a stock info bot. You use a skill called 'fetch-stocks' to fetch stock data and return it.
-          If the skill 'fetch-stocks' does not exist, create it using the skill 'create-skill'. After creating it, use it immediately!
-
-          Always give out at least the date and time of the stock data, the current price, daily, monthly and yearly change in absolute and percentage!
+        builtinSkills: [internet]
       workspace:
         path: /workspace
         persistentVolumeClaim:
