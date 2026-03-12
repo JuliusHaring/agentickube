@@ -1,11 +1,11 @@
-"""Pydantic-ai toolsets: skill code tools + MCP servers."""
+"""Pydantic-ai toolsets: skill system tools + MCP servers."""
 
 import inspect
 
 from pydantic_ai import FunctionToolset
 
 from config import agent_config
-from logic.skills import load_skill_tools
+from logic.skills import get_skill_instructions, run_skill_script
 from logic.tools.mcp import mcp_toolsets
 from shared.logging import get_logger
 
@@ -52,40 +52,10 @@ def _wrap_tool_output(fn):
     def wrapped(*args, **kwargs):
         call_args, call_kwargs = _adapt_tool_call(fn, args, kwargs)
         logger.info(
-            "Tool used: name=%s args=%s",
-            getattr(fn, "__name__", "?"),
-            call_kwargs if call_kwargs else (call_args if call_args else None),
+            f"Calling tool: {fn.__name__} with args: {call_args} and kwargs: {call_kwargs}"
         )
         try:
             out = fn(*call_args, **call_kwargs)
-        except TypeError as e:
-            if (
-                "required positional argument" in str(e)
-                or "missing required" in str(e).lower()
-            ):
-                sig = inspect.signature(fn)
-                required = [
-                    p.name
-                    for p in sig.parameters.values()
-                    if p.default is inspect.Parameter.empty
-                ]
-                logger.error(
-                    "Tool error: name=%s args=%s error=%s",
-                    getattr(fn, "__name__", "?"),
-                    call_kwargs if call_kwargs else (call_args if call_args else None),
-                    e,
-                )
-                return (
-                    f"Tool error for {getattr(fn, '__name__', '?')}: {e}. "
-                    f"Required arguments: {required}. Pass all required arguments and retry."
-                )
-            logger.error(
-                "Tool error: name=%s args=%s error=%s",
-                getattr(fn, "__name__", "?"),
-                call_kwargs if call_kwargs else (call_args if call_args else None),
-                e,
-            )
-            return f"Tool error for tool {getattr(fn, '__name__', '?')}: {e}"
         except Exception as e:
             logger.error(
                 "Tool error: name=%s args=%s error=%s",
@@ -109,9 +79,11 @@ def _wrap_tool_output(fn):
 def assemble_toolsets() -> list:
     toolsets = []
 
-    skill_tools = [_wrap_tool_output(t) for t in load_skill_tools()]
-    if skill_tools:
-        toolsets.append(FunctionToolset(tools=skill_tools))
+    skill_system_tools = [
+        _wrap_tool_output(get_skill_instructions),
+        _wrap_tool_output(run_skill_script),
+    ]
+    toolsets.append(FunctionToolset(tools=skill_system_tools))
 
     if agent_config.mcp_servers:
         toolsets.extend(mcp_toolsets())

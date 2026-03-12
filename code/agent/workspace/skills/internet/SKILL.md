@@ -1,11 +1,11 @@
 ---
 name: internet
-description: Fetch URLs over HTTP/HTTPS. Uses httpx with an optional custom User-Agent. Use when the user asks to fetch a URL, fetch a webpage, or get content from the internet.
+description: Fetch URLs over HTTP/HTTPS. Use when the user asks to fetch a URL, get content from the web, or retrieve multiple pages.
 ---
 
 # Internet
 
-Use the tools in this skill to fetch content from the web.
+Fetch content from the web over HTTP/HTTPS.
 
 ## When to use
 
@@ -13,15 +13,29 @@ Use the tools in this skill to fetch content from the web.
 - User provides a URL and wants the page body or text.
 - User asks for multiple sites at once (e.g. compare pages, aggregate from several URLs).
 
-## Tools
+## Scripts
 
-- **fetch_url**: Fetches a single URL with GET. Optionally set a custom User-Agent. Returns the response body as text. Use for one page or API.
+### fetch_url.py
 
-- **fetch_urls**: Fetches multiple URLs in parallel. Pass a list of URLs; returns one combined result with a clear section per URL (each block starts with `---`, then `URL: <url>`, then the content). Use when you need several websites at once (e.g. compare top movers from two sources, or fetch a fixed set of pages). Optional `user_agent` and `timeout_per_url` (seconds, default 30). Each response is truncated to avoid huge output; use `fetch_url` for a single URL if you need the full body.
+Fetch a single URL and print the response body.
+
+**Usage:** `python fetch_url.py <url> [user_agent]`
+
+- `url`: The URL to fetch.
+- `user_agent`: Optional custom User-Agent header (default: AgentickubeAgent/1.0).
+- Output is the response text printed to stdout (truncated at 15000 chars).
+
+### fetch_urls.py
+
+Fetch multiple URLs in parallel and print combined results.
+
+**Usage:** `python fetch_urls.py <url1> <url2> ... [--user-agent UA] [--timeout SECS]`
+
+- Each URL's result is printed as a separate section.
+- `--user-agent`: Optional custom User-Agent for all requests.
+- `--timeout`: Timeout per request in seconds (default 30).
 
 ## Notes
 
-- For HTML pages, tools return raw HTML; you may need to extract text or links from it.
-- For JSON APIs (e.g. Yahoo Finance chart): use fetch_url with the API URL (e.g. https://query1.finance.yahoo.com/v8/finance/chart/AAPL); the response body is the raw JSON — parse or interpret it to get price, meta, etc.
-- Set `user_agent` when a site requires a browser-like or specific User-Agent.
+- For HTML pages, scripts return raw HTML; you may need to extract text or links from it.
 - Large or slow responses are truncated; multiple URLs are fetched concurrently.
