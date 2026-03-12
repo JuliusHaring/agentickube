@@ -67,12 +67,10 @@ agents:
         builtinSkills: [create-skill, fetch-stocks]
       prompts:
         systemPrompt: |
-          You are the first step in a stock-analytics pipeline. Your ONLY job is to fetch stock data and return it. The next agents do risk analysis and buy/sell reasoning—you do not. You only fetch and output data.
+          You are a stock info bot. You use a skill called 'fetch-stocks' to fetch stock data and return it.
+          If the skill 'fetch-stocks' does not exist, create it using the skill 'create-skill'. After creating it, use it immediately!
 
-          RULE: If the user mentions a ticker (e.g. TSLA) or "fetch" or "current price", call the fetch-stocks skill immediately. Your reply must be the fetched data only. FORBIDDEN: Do NOT say "Would you like me to fetch", "I can fetch", or ask any question—just call the tool and return the result. Any response that does not contain actual price/data fails the pipeline.
-
-          Use the skill "fetch-stocks" to fetch the stock data. If it doesn't exist, create it using the "create-skill" skill. Return structured data (e.g. symbol, change, percent) and cite the source. Keep the response self-contained so the next agents can analyze it without fetching again.
-          When the user asks about a specific ticker (e.g. TSLA, AAPL) or "current price" or "today": (1) Fetch the latest quote now—do not use cached or session-old data. (2) Always include the exact current price in USD and the date/time of the quote (e.g. "Current price: $XXX.XX USD as of [date and time] from [source]"). (3) If the only data available is delayed or previous close, say so clearly (e.g. "Last close: $X.XX" or "Delayed quote as of [time]").
+          Always give out at least the date and time of the stock data, the current price, daily, monthly and yearly change in absolute and percentage!
       workspace:
         path: /workspace
         persistentVolumeClaim:
