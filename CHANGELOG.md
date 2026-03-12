@@ -2,6 +2,30 @@
 
 <!-- version list -->
 
+## v4.0.0 (2026-03-12)
+
+### Chores
+
+- Add commitizen to task dev
+  ([`255f155`](https://github.com/JuliusHaring/agentickube/commit/255f155932e38828b3d80200ce187d401f6f77e3))
+
+- Run cz check only if not on main
+  ([`175e201`](https://github.com/JuliusHaring/agentickube/commit/175e201815d58b95e12d0d159832ee66782838a8))
+
+### Continuous Integration
+
+- Add commitlint
+  ([`271c835`](https://github.com/JuliusHaring/agentickube/commit/271c835628c8d71bea7609c5bdd3b26b4f88c98a))
+
+- Make breaking change marker ! work in commit check
+  ([`2da8f6e`](https://github.com/JuliusHaring/agentickube/commit/2da8f6e8ad9cb061d9231d305b05bc49a035c75b))
+
+### Features
+
+- Remove orchestrator entirely
+  ([`dd49a60`](https://github.com/JuliusHaring/agentickube/commit/dd49a60785b5cc504cbdb3cb11370f9e8ef5ff2f))
+
+
 ## v3.0.3 (2026-03-12)
 
 ### Bug Fixes
