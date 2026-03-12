@@ -1,9 +1,9 @@
-[![CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
-[![CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
+[CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
+[CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
 
 # AgenticKube
 
-[![Star History Chart](https://api.star-history.com/image?repos=JuliusHaring/agentickube&type=date&legend=bottom-right)](https://www.star-history.com/?repos=JuliusHaring%2Fagentickube&type=date&legend=top-left)
+[Star History Chart](https://www.star-history.com/?repos=JuliusHaring%2Fagentickube&type=date&legend=top-left)
 
 **🤖 Agents in Kubernetes — declarative, yours, no lock-in.**
 
@@ -11,13 +11,18 @@
 
 Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Your models, your cluster.
 
-| | |
-|---|---|
-| 🧩 | **One resource** — one `Agent` = one workload (HTTP, one-off Job, or Cron) |
-| 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
-| 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skill/SKILL.md) |
-| 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
-| 📦 | **Helm OCI** — one command to install CRDs + operator from GHCR |
+
+|     |                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 🧩  | **One resource** — one `Agent` = one workload (HTTP, one-off Job, or Cron)                                                                                   |
+| 🔌  | **Your LLM** — Ollama, OpenAI, any compatible API                                                                                                            |
+| 🔧  | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skill/SKILL.md)           |
+| 📁  | **Mountable workspace** — optional PVC for persistent state and files                                                                                        |
+| 🧠  | **Conversation memory** — opt-in history with configurable limits per Agent                                                                                  |
+| 🛡️ | **Pluggable auth** — `AUTH_TYPE` (`basic`, `api_key`, `oauth2`) wired from the `Agent` spec into FastAPI dependencies (incl. Keycloak / OIDC JWT validation) |
+| 🔭  | **Tracing-ready** — OpenTelemetry hooks from the agent and Helm values for OTEL                                                                              |
+| 📦  | **Helm OCI** — one command to install CRDs + operator from GHCR                                                                                              |
+
 
 ## Installation
 
