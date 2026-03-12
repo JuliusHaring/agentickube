@@ -1,5 +1,5 @@
-[CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
-[CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
+[![CI](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/ci.yaml)
+[![CD](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml/badge.svg?branch=main)](https://github.com/JuliusHaring/agentickube/actions/workflows/cd.yaml)
 
 # AgenticKube
 
