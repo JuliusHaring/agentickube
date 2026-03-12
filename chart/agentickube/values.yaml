@@ -70,8 +70,10 @@ agentImage:
 #   auth:
 #     type: oauth2
 #     oauth2:
-#       bearerToken: { secretName: my-secret, secretKey: bearer-token }
-#       # optional: clientId, clientSecret, authorizationUrl, tokenUrl, introspectionUrl, issuerUrl, audience
+#       issuerUrl: https://keycloak.example.com/realms/my-realm   # required for JWT validation
+#       audience: my-client   # optional; verify aud claim if set
+#       tokenUrl: ...   # for clients to obtain tokens
+#       clientId: / clientSecret:   # for clients; optional bearerToken for static token fallback
 agents: []
 
 # Optional: create a default PVC for agent workspaces (e.g. when agents[].spec.workspace.persistentVolumeClaim.claimName references it)

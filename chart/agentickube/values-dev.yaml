@@ -26,8 +26,8 @@ jaeger:
   enabled: true
 
 # Keycloak: pre-filled realm "agentickube" and client "agent". Admin UI: port-forward keycloak 8080 (admin/admin).
-# Agent is wired to OAuth2: use the client secret as Bearer token (no JWT validation in agent).
-# Get a token: curl -s -X POST http://keycloak:8080/realms/agentickube/protocol/openid-connect/token -d "grant_type=client_credentials&client_id=agent&client_secret=agent-dev-secret"
+# Agent uses OAuth2 JWT validation: get an access token from Keycloak, then call the agent with Authorization: Bearer <token>.
+# Get a token (client credentials): curl -s -X POST http://keycloak:8080/realms/agentickube/protocol/openid-connect/token -d "grant_type=client_credentials&client_id=agent&client_secret=agent-dev-secret" | jq -r .access_token
 keycloak:
   enabled: true
   realmImport: true
@@ -53,16 +53,15 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
-      # OAuth2 wired to Keycloak (realm agentickube, client agent). Use client secret as Bearer token.
+      # OAuth2 JWT: agent validates Bearer tokens from Keycloak. Get token via client credentials, then use as Bearer.
+      # issuerUrl lists allowed issuers (comma-separated); include localhost when getting token via port-forward.
       auth:
         type: oauth2
         oauth2:
-          bearerToken:
-            raw: agent-dev-secret
           clientId: agent
           clientSecret: agent-dev-secret
           tokenUrl: http://keycloak:8080/realms/agentickube/protocol/openid-connect/token
-          issuerUrl: http://keycloak:8080/realms/agentickube
+          issuerUrl: "http://keycloak:8080/realms/agentickube,http://localhost:8080/realms/agentickube"
       llm: *llm
       skills:
         builtinSkills: [create-skill, fetch-stocks]
