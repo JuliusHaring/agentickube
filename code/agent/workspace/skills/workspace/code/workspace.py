@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from src.config import agent_config
+from config import agent_config  # type:ignore[unresolved-import]
 
 
 def _resolve_path(relative_path: str) -> Path:
