@@ -22,38 +22,15 @@ def _read_skill(path: Path) -> str | None:
         return None
 
 
-def _discover_skills(directory: str) -> dict[str, Path]:
-    """Discover skills in a directory. Returns {name: path_to_SKILL.md}.
-
-    Supports:
-      directory/skill-name/SKILL.md  (subdirectory per skill)
-    """
+def _discover_skill_dirs(directory: str) -> dict[str, Path]:
+    """Discover skill directories (subdirs that contain SKILL.md). Returns {name: skill_dir}."""
     root = Path(directory)
     logger.info(f"Discovering skills in {root}")
     if not root.is_dir():
         return {}
-
-    skills: dict[str, Path] = {}
-    for child in sorted(root.iterdir()):
-        if child.is_dir():
-            skill_md = child / "SKILL.md"
-            if skill_md.is_file():
-                skills[child.name] = skill_md
-    return skills
-
-
-def _discover_skill_dirs(directory: str) -> dict[str, Path]:
-    """Discover skill directories (not flat .md files) that have a code/ subfolder."""
-    root = Path(directory)
-    if not root.is_dir():
-        return {}
     dirs: dict[str, Path] = {}
     for child in sorted(root.iterdir()):
-        if (
-            child.is_dir()
-            and (child / "SKILL.md").is_file()
-            and (child / "code").is_dir()
-        ):
+        if child.is_dir() and (child / "SKILL.md").is_file():
             dirs[child.name] = child
     return dirs
 
@@ -78,53 +55,18 @@ def _collect_tools_from_skill(skill_name: str, skill_dir: Path) -> list[Callable
         try:
             module = _import_module_from_path(module_name, py_file)
         except Exception as e:
-            logger.warning("Failed to import skill code %s: %s", py_file, e)
+            logger.warning("Failed to register skill code %s: %s", py_file, e)
             continue
         for func_name, func in inspect.getmembers(module, inspect.isfunction):
             if func_name.startswith("_"):
                 continue
             if func.__module__ != module_name:
                 continue
-            logger.info("Registered tool %s from skill %s", func_name, skill_name)
+            logger.info(
+                "Registered tool %s from skill %s in memory", func_name, skill_name
+            )
             tools.append(func)
     return tools
-
-
-def _load_tools_from(
-    directory: str, label: str, filter_names: list[str] | None = None
-) -> list[Callable]:
-    """Discover skill dirs with code/ in a directory and load their tools."""
-    found = _discover_skill_dirs(directory)
-    if filter_names is not None:
-        found = {k: v for k, v in found.items() if k in filter_names}
-    tools: list[Callable] = []
-    for name, skill_dir in found.items():
-        skill_tools = _collect_tools_from_skill(name, skill_dir)
-        if skill_tools:
-            logger.info(
-                "Loaded %d tool(s) from %s skill: %s", len(skill_tools), label, name
-            )
-            tools.extend(skill_tools)
-    return tools
-
-
-def _load_from(
-    directory: str, label: str, filter_names: list[str] | None = None
-) -> list[str]:
-    """Discover and load skills from a directory, optionally filtering by name."""
-    found = _discover_skills(directory)
-    if filter_names is not None:
-        logger.info("Filtering skills by name: %s", filter_names)
-        found = {k: v for k, v in found.items() if k in filter_names}
-    else:
-        logger.info("Loading all skills")
-    contents: list[str] = []
-    for name, path in found.items():
-        text = _read_skill(path)
-        if text:
-            logger.info("Loaded %s skill: %s", label, name)
-            contents.append(text)
-    return contents
 
 
 WORKSPACE_TEMPLATE_DIR = "/code/workspace"
@@ -176,29 +118,23 @@ def sync_workspace_from_repo(
                 logger.info(f"Keeping skill: {child} (in builtin_skills)")
 
 
-def load_skills() -> list[str]:
-    """Load all skills from {workspace}/skills/.
-
-    Built-ins and operator-provided skills are seeded there at startup.
-    Agent-created skills are written there at runtime and picked up immediately.
-    When builtin_skills is set, only those skills are loaded (allowlist).
-    """
-    filter_names = agent_config.builtin_skills
-    contents = _load_from(
-        agent_config.skills_dir, "workspace", filter_names=filter_names
-    )
-    logger.info("Loaded %d skills total", len(contents))
-    return contents
-
-
 def load_skill_tools() -> list[Callable]:
     """Load Python tool functions from {workspace}/skills/.
 
     When builtin_skills is set, only those skills' tools are loaded (allowlist).
     """
-    filter_names = agent_config.builtin_skills
-    tools = _load_tools_from(
-        agent_config.skills_dir, "workspace", filter_names=filter_names
-    )
+    found = _discover_skill_dirs(agent_config.skills_dir)
+    if agent_config.builtin_skills is not None:
+        found = {k: v for k, v in found.items() if k in agent_config.builtin_skills}
+    tools: list[Callable] = []
+    for name, skill_dir in found.items():
+        if not (skill_dir / "code").is_dir():
+            continue
+        skill_tools = _collect_tools_from_skill(name, skill_dir)
+        if skill_tools:
+            logger.info(
+                "Loaded %d tool(s) from workspace skill: %s", len(skill_tools), name
+            )
+            tools.extend(skill_tools)
     logger.info("Loaded %d skill tools total", len(tools))
     return tools
