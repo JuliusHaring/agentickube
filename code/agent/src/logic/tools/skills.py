@@ -28,6 +28,7 @@ def _discover_skill_dirs(directory: str) -> dict[str, Path]:
     root = Path(directory)
     logger.info(f"Discovering skills in {root}")
     if not root.is_dir():
+        logger.info(f"No skills directory found at {root}")
         return {}
     dirs: dict[str, Path] = {}
     for child in sorted(root.iterdir()):
@@ -36,11 +37,15 @@ def _discover_skill_dirs(directory: str) -> dict[str, Path]:
     return dirs
 
 
-def _filtered_skill_dirs() -> dict[str, Path]:
-    """Discover skill dirs with builtin_skills allowlist applied."""
+def _runtime_skill_dirs() -> dict[str, Path]:
+    """Discover runtime skill dirs from the workspace.
+
+    Any skills present under the runtime skills directory are available.
+    Startup filtering is handled by sync_workspace_from_repo, which copies
+    only the allowed template skills into the workspace.
+    """
     found = _discover_skill_dirs(agent_config.skills_dir)
-    if agent_config.builtin_skills is not None:
-        found = {k: v for k, v in found.items() if k in agent_config.builtin_skills}
+    logger.info(f"Runtime skills: {found}")
     return found
 
 
@@ -91,7 +96,7 @@ def _strip_frontmatter(text: str) -> str:
 
 def load_skill_metadata() -> list[SkillMetadata]:
     """Load metadata (name + description) from all discovered skills."""
-    found = _filtered_skill_dirs()
+    found = _runtime_skill_dirs()
     results: list[SkillMetadata] = []
     for dir_name, skill_dir in found.items():
         meta = _parse_skill_frontmatter(skill_dir / "SKILL.md", dir_name)
@@ -112,6 +117,7 @@ def list_skills() -> str:
     if not meta_list:
         return "No skills available."
     lines = [f"{s.dir_name} — {s.description}" for s in meta_list]
+    logger.info(f"Available skills: {lines}")
     return (
         "Available skills (use these exact skill_id values in other tools):\n"
         + "\n".join(lines)
@@ -124,7 +130,7 @@ def get_skill_instructions(skill_name: str) -> str:
     Args:
         skill_name: The directory name of the skill (e.g. 'internet', 'markdown').
     """
-    found = _filtered_skill_dirs()
+    found = _runtime_skill_dirs()
     skill_dir = found.get(skill_name)
     if skill_dir is None:
         available = ", ".join(sorted(found.keys())) or "(none)"
@@ -142,7 +148,9 @@ def get_skill_instructions(skill_name: str) -> str:
         logger.error("Error reading SKILL.md for '%s': %s", skill_name, e)
         raise ValueError(f"Error reading SKILL.md for '{skill_name}': {e}")
 
-    return _strip_frontmatter(text).strip()
+    skill_instructions = _strip_frontmatter(text).strip()
+    logger.info(f"Skill instructions for {skill_name}: {skill_instructions}")
+    return skill_instructions
 
 
 def _looks_like_script_filename(s: str) -> bool:
@@ -162,7 +170,7 @@ def run_skill_script(
         arguments: Optional list of command-line arguments to pass to the script.
     """
     logger.info(f"Running skill script: {skill_name}, {script_name}, {arguments}")
-    found = _filtered_skill_dirs()
+    found = _runtime_skill_dirs()
     skill_dir = found.get(skill_name)
 
     # Model sometimes passes (script_name, first_arg, ...) omitting skill_name; resolve skill from script.
@@ -249,12 +257,17 @@ def run_skill_script(
             timeout=SCRIPT_TIMEOUT_SECONDS,
             cwd=str(scripts_dir),
         )
+        logger.info(f"Script output: {result.stdout}")
+        logger.info(f"Script stderr: {result.stderr}")
+        logger.info(f"Script return code: {result.returncode}")
         output = result.stdout
         if result.stderr:
             output += f"\n[stderr]\n{result.stderr}"
         if result.returncode != 0:
             output += f"\n[exit code: {result.returncode}]"
-        return output.strip() if output.strip() else "(no output)"
+        return_output = output.strip() if output.strip() else "(no output)"
+        logger.info(f"Script return output: {return_output}")
+        return return_output
     except subprocess.TimeoutExpired:
         logger.error(
             "Script '%s' timed out after %s seconds.",
