@@ -9,9 +9,11 @@ tasks:
   lint: ruff check .
   lint-fix: ruff check . --fix
   type: ty check .
+  commit-check: cz check --rev-range main..HEAD
 
   all:
     - task: install
     - task: format
     - task: lint-fix
     - task: type
+    - task: commit-check
