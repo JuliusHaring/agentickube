@@ -159,7 +159,7 @@ def sync_workspace_from_repo(
             shutil.copy2(str(child), str(dest))
 
     # If builtin_skills is set (including []), keep only those skills; remove all others.
-    skills_dir = workspace / "skills"
+    skills_dir = Path(agent_config.skills_dir)
     if agent_config.builtin_skills is not None and skills_dir.is_dir():
         keep = frozenset(agent_config.builtin_skills)
         for child in list(skills_dir.iterdir()):
