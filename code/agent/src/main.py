@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 import uvicorn
 from fastapi import FastAPI
 
+from security import get_auth_dependencies, validate_auth_config
 from config import agent_config
 from logic.skills import sync_workspace_from_repo
 from routes import query_router
@@ -17,11 +18,12 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     logging.config.dictConfig(LOGGING_CONFIG)
 
+    validate_auth_config()
     sync_workspace_from_repo()
     yield
 
 
-app = FastAPI(title="Agent", lifespan=lifespan)
+app = FastAPI(title="Agent", lifespan=lifespan, dependencies=get_auth_dependencies())
 
 setup_fastapi_opentelemetry(app, default_service_name="agent")
 app.include_router(query_router)

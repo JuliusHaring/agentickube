@@ -1,8 +1,9 @@
 import os
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from shared.llm import LLMConfig  # noqa: F401 (re-exported for backward compat)
 
@@ -13,27 +14,21 @@ class MCPServerConfig(BaseModel):
 
 
 class AgentConfig(BaseSettings):
-    agent_name: str | None = Field(default=None, validation_alias="AGENT_NAME")
-    system_prompt: str | None = Field(default=None, validation_alias="SYSTEM_PROMPT")
+    agent_name: str | None = Field(default=None)
+    system_prompt: str | None = Field(default=None)
     mcp_servers: list[MCPServerConfig] = []
-    workspace_dir: str = Field(default="/workspace", validation_alias="WORKSPACE_DIR")
-    conversation_memory_enabled: bool = Field(
-        default=False, validation_alias="CONVERSATION_MEMORY_ENABLED"
-    )
-    conversation_max_history: int = Field(
-        default=20, validation_alias="CONVERSATION_MAX_HISTORY"
-    )
-    port: int = Field(default=8000, validation_alias="PORT")
-    reload: bool = Field(default=False, validation_alias="RELOAD")
+    workspace_dir: str = Field(default="/workspace")
+    conversation_memory_enabled: bool = Field(default=False)
+    conversation_max_history: int = Field(default=20)
+    port: int = Field(default=8000)
+    reload: bool = Field(default=False)
 
     @property
     def skills_dir(self) -> str:
         """Runtime skills directory — always inside the workspace."""
         return str(Path(self.workspace_dir) / "skills")
 
-    builtin_skills: list[str] | None = Field(
-        default=None, validation_alias="BUILTIN_SKILLS"
-    )
+    builtin_skills: list[str] | None = Field(default=None)
 
     @field_validator("builtin_skills", mode="before")
     @classmethod
@@ -62,7 +57,7 @@ class AgentConfig(BaseSettings):
 
 
 class AgentCLIConfig(AgentConfig):
-    agent_query: str | None = Field(default=None, validation_alias="AGENT_QUERY")
+    agent_query: str | None = Field(default=None)
 
 
 def _mcp_servers_from_env() -> list[dict]:
@@ -80,5 +75,25 @@ def _mcp_servers_from_env() -> list[dict]:
     return servers
 
 
+class AuthConfig(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="AUTH_")
+
+    type: Literal["basic", "api_key", "oauth2"] | None = Field(default=None)
+    username: str | None = Field(default=None)
+    password: str | None = Field(default=None)
+    api_key: str | None = Field(default=None)
+
+    # OAuth2 (Bearer token validation; other vars for introspection / JWT if needed later)
+    oauth2_bearer_token: str | None = Field(default=None)
+    oauth2_client_id: str | None = Field(default=None)
+    oauth2_client_secret: str | None = Field(default=None)
+    oauth2_authorization_url: str | None = Field(default=None)
+    oauth2_token_url: str | None = Field(default=None)
+    oauth2_introspection_url: str | None = Field(default=None)
+    oauth2_issuer_url: str | None = Field(default=None)
+    oauth2_audience: str | None = Field(default=None)
+
+
 llm_config = LLMConfig()  # type: ignore - managed by pydantic settings
 agent_config = AgentConfig()
+auth_config = AuthConfig()
