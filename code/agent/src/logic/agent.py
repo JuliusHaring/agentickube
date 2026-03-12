@@ -6,7 +6,7 @@ from logic.history import get_history, history_to_model_messages, record_turn
 from logic.session import extract_steps_from_run
 from config import agent_config
 from logic.providers import get_model
-from logic.prompt import agent_instructions, skills_prompt
+from logic.prompt import agent_instructions
 from logic.tools import assemble_toolsets
 from shared.logging import get_logger
 
@@ -36,15 +36,11 @@ def agent_loop(query: str, session_id: str | None = None) -> str:
         attrs["session.id"] = session_id
 
     try:
-        skills = skills_prompt()
-        logger.info("Skills loaded for context (not in user prompt)")
-
         message_history = history_to_model_messages(history)
         with _tracer.start_as_current_span("agent_run", attributes=attrs) as span:
             res = _build_agent().run_sync(
                 user_prompt=query,
                 message_history=message_history or None,
-                instructions=skills if skills else None,
             )
             try:
                 usage = res.usage()
