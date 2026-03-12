@@ -2,6 +2,36 @@
 
 <!-- version list -->
 
+## v5.0.0 (2026-03-12)
+
+### Chores
+
+- Replace a dataclass by a basemodel
+  ([`77cdd85`](https://github.com/JuliusHaring/agentickube/commit/77cdd8543d270572825a9086e46c913712c331fe))
+
+### Documentation
+
+- Re-add star history chart
+  ([`b896d0d`](https://github.com/JuliusHaring/agentickube/commit/b896d0d0f339dd9b2840b7a41e0c2caebf9247c6))
+
+- Reimplement ci cd badges in readme
+  ([`0a0bf82`](https://github.com/JuliusHaring/agentickube/commit/0a0bf82b84f5d820bf4ba128214df839307bf25f))
+
+- Update readme with new features
+  ([`20a2372`](https://github.com/JuliusHaring/agentickube/commit/20a2372a811f8ae022bd070a5d9f3b1554c9e4b8))
+
+### Refactoring
+
+- Make helm chart closer to native kubernetes
+  ([`b20fd0f`](https://github.com/JuliusHaring/agentickube/commit/b20fd0f73f98bf2c12426c447408a9202ac32b55))
+
+- Make skill discovery more verbose
+  ([`5c07fd8`](https://github.com/JuliusHaring/agentickube/commit/5c07fd81778a8850c3f9d3651e831e1c9b6b93a9))
+
+- Make skill lookup a tool
+  ([`795bae5`](https://github.com/JuliusHaring/agentickube/commit/795bae5279e42bbb6aa21facdd625ae31f7ba29e))
+
+
 ## v4.3.0 (2026-03-12)
 
 ### Chores
