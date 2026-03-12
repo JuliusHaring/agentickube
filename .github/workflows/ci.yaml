@@ -7,6 +7,40 @@ on:
     branches: [main]
 
 jobs:
+  semantic-pr:
+    name: Semantic branch and commits
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check branch name
+        run: |
+          branch="${{ github.head_ref }}"
+          # Allowed: type/description (e.g. feature/add-button, fix/typo)
+          if ! echo "$branch" | grep -qE '^(feature|fix|chore|docs|style|refactor|perf|test|build|ci|release)/[a-zA-Z0-9._/-]+$'; then
+            echo "::error::Branch name must follow pattern: type/description (e.g. feature/add-button, fix/typo)"
+            echo "Allowed types: feature, fix, chore, docs, style, refactor, perf, test, build, ci, release"
+            exit 1
+          fi
+          echo "Branch name OK: $branch"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: environments/dev-requirements.txt
+
+      - name: Install dev dependencies
+        run: pip install -r environments/dev-requirements.txt
+
+      - name: Validate commit messages (cz check)
+        run: cz check --rev-range ${{ github.event.pull_request.base.sha }}..HEAD
+
   lint:
     name: Lint and format
     runs-on: ubuntu-latest

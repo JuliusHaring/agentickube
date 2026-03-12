@@ -2,3 +2,4 @@ ty
 ruff
 watchdog
 pre-commit
+commitizen
