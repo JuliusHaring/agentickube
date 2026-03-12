@@ -2,6 +2,39 @@
 
 <!-- version list -->
 
+## v3.0.3 (2026-03-12)
+
+### Bug Fixes
+
+- Fix typing issues - OPEN TODOs
+  ([`f891048`](https://github.com/JuliusHaring/agentickube/commit/f89104807ea78879a583367aec8c3b6ea1ef9919))
+
+### Chores
+
+- Add ci caching
+  ([`d935a9e`](https://github.com/JuliusHaring/agentickube/commit/d935a9ee28ba3800adfe41302605e9a2d771cfa5))
+
+- Add ty for type checking
+  ([`68e2e32`](https://github.com/JuliusHaring/agentickube/commit/68e2e32856375ef4a234464a6e169f1ab9b77133))
+
+- Add ty to tasks/dev
+  ([`1214620`](https://github.com/JuliusHaring/agentickube/commit/121462032ef750cb008b340891889c59d4b13173))
+
+- Add type checking to ci
+  ([`038270f`](https://github.com/JuliusHaring/agentickube/commit/038270f16050177a646e2cfbe6dc2de02f342453))
+
+- Adjust types to match actual behaviour
+  ([`696fef2`](https://github.com/JuliusHaring/agentickube/commit/696fef2e61543c867a0314331892a3b3cad158d4))
+
+- Get rid of typing Optional
+  ([`d56efb3`](https://github.com/JuliusHaring/agentickube/commit/d56efb35db8d50bfe669051464dd3457468e3115))
+
+### Continuous Integration
+
+- Adapt python cache paths
+  ([`5c2a658`](https://github.com/JuliusHaring/agentickube/commit/5c2a6583d3e387fb00ccdab99ed1f041e3256612))
+
+
 ## v3.0.2 (2026-03-09)
 
 ### Bug Fixes
