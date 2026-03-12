@@ -22,5 +22,6 @@ Use the tools in this skill to fetch content from the web.
 ## Notes
 
 - For HTML pages, tools return raw HTML; you may need to extract text or links from it.
+- For JSON APIs (e.g. Yahoo Finance chart): use fetch_url with the API URL (e.g. https://query1.finance.yahoo.com/v8/finance/chart/AAPL); the response body is the raw JSON — parse or interpret it to get price, meta, etc.
 - Set `user_agent` when a site requires a browser-like or specific User-Agent.
 - Large or slow responses are truncated; multiple URLs are fetched concurrently.

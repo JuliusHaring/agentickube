@@ -56,7 +56,44 @@ def _wrap_tool_output(fn):
             getattr(fn, "__name__", "?"),
             call_kwargs if call_kwargs else (call_args if call_args else None),
         )
-        out = fn(*call_args, **call_kwargs)
+        try:
+            out = fn(*call_args, **call_kwargs)
+        except TypeError as e:
+            if (
+                "required positional argument" in str(e)
+                or "missing required" in str(e).lower()
+            ):
+                sig = inspect.signature(fn)
+                required = [
+                    p.name
+                    for p in sig.parameters.values()
+                    if p.default is inspect.Parameter.empty
+                ]
+                logger.error(
+                    "Tool error: name=%s args=%s error=%s",
+                    getattr(fn, "__name__", "?"),
+                    call_kwargs if call_kwargs else (call_args if call_args else None),
+                    e,
+                )
+                return (
+                    f"Tool error for {getattr(fn, '__name__', '?')}: {e}. "
+                    f"Required arguments: {required}. Pass all required arguments and retry."
+                )
+            logger.error(
+                "Tool error: name=%s args=%s error=%s",
+                getattr(fn, "__name__", "?"),
+                call_kwargs if call_kwargs else (call_args if call_args else None),
+                e,
+            )
+            return f"Tool error for tool {getattr(fn, '__name__', '?')}: {e}"
+        except Exception as e:
+            logger.error(
+                "Tool error: name=%s args=%s error=%s",
+                getattr(fn, "__name__", "?"),
+                call_kwargs if call_kwargs else (call_args if call_args else None),
+                e,
+            )
+            return f"Tool error for tool {getattr(fn, '__name__', '?')}: {e}"
         if isinstance(out, str) and len(out) > MAX_TOOL_OUTPUT_CHARS:
             return (
                 out[:MAX_TOOL_OUTPUT_CHARS]
