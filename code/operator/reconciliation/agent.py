@@ -20,6 +20,7 @@ from models import (
 from .common import (
     CLI_COMMAND,
     DEFAULT_PULL_POLICY,
+    auth_env,
     build_container_sc,
     build_pod_sc,
     build_resources,
@@ -132,6 +133,7 @@ def _build_agent_env(
     ws = spec.workspace or WorkspaceConfig()
     env = [
         client.V1EnvVar(name="AGENT_NAME", value=name),
+        *auth_env(spec.auth),
         *llm_env(spec.llm),
         *_mcp_env(spec.mcp_servers or []),
         client.V1EnvVar(name="WORKSPACE_DIR", value=ws.path),

@@ -163,6 +163,44 @@ class EnvVar(_Base):
     value_from: EnvVarSource | None = None
 
 
+# ── Auth (agent HTTP auth: basic, api_key, oauth2) ───────────────────────────
+
+
+class AuthBasicConfig(_Base):
+    """Credentials for AUTH_TYPE=basic. Use valueFrom.secretKeyRef in CR for secrets."""
+
+    username: APIKeyConfig | None = None
+    password: APIKeyConfig | None = None
+
+
+class AuthApiKeyConfig(_Base):
+    """API key for AUTH_TYPE=api_key."""
+
+    api_key: APIKeyConfig | None = None
+
+
+class AuthOAuth2Config(_Base):
+    """OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2."""
+
+    bearer_token: APIKeyConfig | None = None
+    client_id: str | None = None
+    client_secret: str | None = None
+    authorization_url: str | None = None
+    token_url: str | None = None
+    introspection_url: str | None = None
+    issuer_url: str | None = None
+    audience: str | None = None
+
+
+class AuthConfig(_Base):
+    """HTTP auth for the agent API (basic, api_key, oauth2). Injected as AUTH_* env vars."""
+
+    type: str | None = None  # "basic" | "api_key" | "oauth2"
+    basic: AuthBasicConfig | None = None
+    api_key: AuthApiKeyConfig | None = None
+    oauth2: AuthOAuth2Config | None = None
+
+
 # ── OpenTelemetry ────────────────────────────────────────────────────────────
 
 
@@ -191,6 +229,7 @@ class AgentSpec(_Base):
     image: str | None = None
     image_pull_policy: str | None = None
     description: str | None = None
+    auth: AuthConfig | None = None
     llm: LLMConfig | None = None
     prompts: PromptsConfig | None = None
     functions: list[FunctionConfig] | None = None

@@ -40,6 +40,13 @@ agents:
     spec:
       image: agentickube-agent:latest
       imagePullPolicy: IfNotPresent
+      auth:
+        type: basic
+        basic:
+          username:
+            raw: admin
+          password:
+            raw: admin
       llm: *llm
       skills:
         builtinSkills: [create-skill, fetch-stocks]
@@ -62,62 +69,4 @@ agents:
         enabled: true
         endpoint: http://otel-collector:4318
         serviceName: stock-fetcher
-        samplingRatio: 1.0
-
-  - name: analyst-risk
-    spec:
-      image: agentickube-agent:latest
-      imagePullPolicy: IfNotPresent
-      llm: *llm
-      skills:
-        builtinSkills: []
-      prompts:
-        systemPrompt: |
-          You are the risk analyst in a stock-analytics pipeline. You run after the stock-fetcher. Your input already contains the mover list and data—do not fetch anything.
-
-          Your ONLY job: write a short risk assessment based on that data. Your output must include:
-          - Volatility: how extreme the moves are and what that implies for ongoing risk.
-          - Drawdown risk: potential for sharp reversals, especially in names that moved 50%+.
-          - Concentration: sector or single-name concentration if the movers cluster in one theme.
-          - Tail risk: likelihood and impact of further large moves (e.g. illiquid names, binary events).
-
-          FORBIDDEN: Do NOT list tickers, prices, or percentage changes. Do NOT say "here are the top gainers/losers" or repeat the mover list in any form. The user and the next agent already have that data; they need your risk view only. If you output a list of movers, you have failed the task.
-      workspace:
-        path: /workspace
-        persistentVolumeClaim:
-          claimName: agent-workspace-pvc
-      conversation:
-        enabled: true
-        maxHistory: 10
-      openTelemetry:
-        enabled: true
-        endpoint: http://otel-collector:4318
-        serviceName: analyst-risk
-        samplingRatio: 1.0
-
-  - name: analyst-momentum
-    spec:
-      image: agentickube-agent:latest
-      imagePullPolicy: IfNotPresent
-      llm: *llm
-      skills:
-        builtinSkills: []
-      prompts:
-        systemPrompt: |
-          You are the momentum/technical analyst in a stock-analytics pipeline. Your input will be the user question plus "Previous agent" response(s) with stock data and risk view. Do not fetch data yourself.
-
-          Your job: output a short momentum/technical analysis (trends, relative strength, what might be driving the moves). Do NOT repeat the mover list or re-answer "top 3 movers". Output only your analysis so the pipeline gets your added value.
-          When the user asked for "current price" or "price in USD", include one line at the top: "**Current price (from data):** $X.XX USD" using the price from the previous step's data.
-          When the user asked for a buy/sell or recommendation, end your response with a single line: "**Conclusion:** Buy / Sell / Hold — [one sentence reasoning]." You may add "This is not financial advice." after it. Give a clear conclusion based on the data and your analysis.
-      workspace:
-        path: /workspace
-        persistentVolumeClaim:
-          claimName: agent-workspace-pvc
-      conversation:
-        enabled: true
-        maxHistory: 10
-      openTelemetry:
-        enabled: true
-        endpoint: http://otel-collector:4318
-        serviceName: analyst-momentum
         samplingRatio: 1.0

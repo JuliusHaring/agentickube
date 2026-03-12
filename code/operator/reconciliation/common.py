@@ -9,6 +9,8 @@ from kubernetes import client
 
 from models import (
     AgentSpec,
+    APIKeyConfig,
+    AuthConfig,
     EnvVar,
     LLMConfig,
     OpenTelemetryConfig,
@@ -23,6 +25,87 @@ CLI_COMMAND = ["python", "app/cli.py"]
 # ── Shared environment variable builders ─────────────────────────────────────
 
 _SpecType = AgentSpec
+
+
+def _api_key_to_env(name: str, key: APIKeyConfig | None) -> list[client.V1EnvVar]:
+    """One env var from APIKeyConfig (raw or secretKeyRef). Empty if key is None or empty."""
+    if not key:
+        return []
+    if key.raw:
+        return [client.V1EnvVar(name=name, value=key.raw)]
+    if key.secret_name and key.secret_key:
+        return [
+            client.V1EnvVar(
+                name=name,
+                value_from=client.V1EnvVarSource(
+                    secret_key_ref=client.V1SecretKeySelector(
+                        name=key.secret_name, key=key.secret_key
+                    )
+                ),
+            )
+        ]
+    return []
+
+
+def auth_env(auth: AuthConfig | None) -> list[client.V1EnvVar]:
+    """AUTH_* env vars for agent HTTP auth (basic, api_key, oauth2)."""
+    if not auth or not auth.type:
+        return []
+    env: list[client.V1EnvVar] = [
+        client.V1EnvVar(name="AUTH_TYPE", value=auth.type.strip().lower()),
+    ]
+    if auth.type == "basic" and auth.basic:
+        env.extend(_api_key_to_env("AUTH_USERNAME", auth.basic.username))
+        env.extend(_api_key_to_env("AUTH_PASSWORD", auth.basic.password))
+    elif auth.type == "api_key" and auth.api_key:
+        env.extend(_api_key_to_env("AUTH_API_KEY", auth.api_key.api_key))
+    elif auth.type == "oauth2" and auth.oauth2:
+        env.extend(
+            _api_key_to_env("AUTH_OAUTH2_BEARER_TOKEN", auth.oauth2.bearer_token)
+        )
+        if auth.oauth2.client_id:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_CLIENT_ID", value=auth.oauth2.client_id
+                )
+            )
+        if auth.oauth2.client_secret:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_CLIENT_SECRET", value=auth.oauth2.client_secret
+                )
+            )
+        if auth.oauth2.authorization_url:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_AUTHORIZATION_URL",
+                    value=auth.oauth2.authorization_url,
+                )
+            )
+        if auth.oauth2.token_url:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_TOKEN_URL", value=auth.oauth2.token_url
+                )
+            )
+        if auth.oauth2.introspection_url:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_INTROSPECTION_URL",
+                    value=auth.oauth2.introspection_url,
+                )
+            )
+        if auth.oauth2.issuer_url:
+            env.append(
+                client.V1EnvVar(
+                    name="AUTH_OAUTH2_ISSUER_URL", value=auth.oauth2.issuer_url
+                )
+            )
+        if auth.oauth2.audience:
+            env.append(
+                client.V1EnvVar(name="AUTH_OAUTH2_AUDIENCE", value=auth.oauth2.audience)
+            )
+    return env
 
 
 def llm_env(llm: LLMConfig | None) -> list[client.V1EnvVar]:

@@ -37,6 +37,102 @@ spec:
               description:
                 type: string
                 nullable: true
+              auth:
+                description: HTTP auth for the agent API (basic, api_key, oauth2). Injected as AUTH_* env vars.
+                properties:
+                  type:
+                    type: string
+                    nullable: true
+                  basic:
+                    description: Credentials for AUTH_TYPE=basic. Use valueFrom.secretKeyRef in CR for secrets.
+                    properties:
+                      username:
+                        properties:
+                          secretName:
+                            type: string
+                            nullable: true
+                          secretKey:
+                            type: string
+                            nullable: true
+                          raw:
+                            type: string
+                            nullable: true
+                        type: object
+                        nullable: true
+                      password:
+                        properties:
+                          secretName:
+                            type: string
+                            nullable: true
+                          secretKey:
+                            type: string
+                            nullable: true
+                          raw:
+                            type: string
+                            nullable: true
+                        type: object
+                        nullable: true
+                    type: object
+                    nullable: true
+                  apiKey:
+                    description: API key for AUTH_TYPE=api_key.
+                    properties:
+                      apiKey:
+                        properties:
+                          secretName:
+                            type: string
+                            nullable: true
+                          secretKey:
+                            type: string
+                            nullable: true
+                          raw:
+                            type: string
+                            nullable: true
+                        type: object
+                        nullable: true
+                    type: object
+                    nullable: true
+                  oauth2:
+                    description: OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2.
+                    properties:
+                      bearerToken:
+                        properties:
+                          secretName:
+                            type: string
+                            nullable: true
+                          secretKey:
+                            type: string
+                            nullable: true
+                          raw:
+                            type: string
+                            nullable: true
+                        type: object
+                        nullable: true
+                      clientId:
+                        type: string
+                        nullable: true
+                      clientSecret:
+                        type: string
+                        nullable: true
+                      authorizationUrl:
+                        type: string
+                        nullable: true
+                      tokenUrl:
+                        type: string
+                        nullable: true
+                      introspectionUrl:
+                        type: string
+                        nullable: true
+                      issuerUrl:
+                        type: string
+                        nullable: true
+                      audience:
+                        type: string
+                        nullable: true
+                    type: object
+                    nullable: true
+                type: object
+                nullable: true
               llm:
                 properties:
                   provider:
