@@ -60,7 +60,6 @@ def agent_loop(query: str, session_id: str | None = None) -> str:
 
         output = res.output
 
-        # TODO: res.result? because res is an AgentRunResult[str] not ModelResponse
         steps = extract_steps_from_run(res)
         if agent_config.conversation_memory_enabled and session_id:
             try:

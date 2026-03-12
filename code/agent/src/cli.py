@@ -34,7 +34,6 @@ def main() -> int:
     logger.info("CLI run started: query=%s", query[:120])
     result = agent_loop(
         query=query,
-        use_memory=agent_cli_config.conversation_memory_enabled,  # TODO: use_memory is not a valid parameter
     )
 
     if result.startswith("Agent error:"):
