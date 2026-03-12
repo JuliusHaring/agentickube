@@ -47,28 +47,76 @@ spec:
                     description: Credentials for AUTH_TYPE=basic. Use valueFrom.secretKeyRef in CR for secrets.
                     properties:
                       username:
+                        description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
                         properties:
-                          secretName:
+                          value:
                             type: string
                             nullable: true
-                          secretKey:
-                            type: string
-                            nullable: true
-                          raw:
-                            type: string
+                          valueFrom:
+                            description: Source for the value of an env var (core.v1.EnvVarSource).
+                            properties:
+                              secretKeyRef:
+                                description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                            type: object
                             nullable: true
                         type: object
                         nullable: true
                       password:
+                        description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
                         properties:
-                          secretName:
+                          value:
                             type: string
                             nullable: true
-                          secretKey:
-                            type: string
-                            nullable: true
-                          raw:
-                            type: string
+                          valueFrom:
+                            description: Source for the value of an env var (core.v1.EnvVarSource).
+                            properties:
+                              secretKeyRef:
+                                description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                            type: object
                             nullable: true
                         type: object
                         nullable: true
@@ -78,33 +126,82 @@ spec:
                     description: API key for AUTH_TYPE=api_key.
                     properties:
                       apiKey:
+                        description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
                         properties:
-                          secretName:
+                          value:
                             type: string
                             nullable: true
-                          secretKey:
-                            type: string
-                            nullable: true
-                          raw:
-                            type: string
+                          valueFrom:
+                            description: Source for the value of an env var (core.v1.EnvVarSource).
+                            properties:
+                              secretKeyRef:
+                                description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                            type: object
                             nullable: true
                         type: object
                         nullable: true
                     type: object
                     nullable: true
                   oauth2:
-                    description: OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2.
+                    description: OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2. Use valueFrom
+                      for client_secret.
                     properties:
                       bearerToken:
+                        description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
                         properties:
-                          secretName:
+                          value:
                             type: string
                             nullable: true
-                          secretKey:
-                            type: string
-                            nullable: true
-                          raw:
-                            type: string
+                          valueFrom:
+                            description: Source for the value of an env var (core.v1.EnvVarSource).
+                            properties:
+                              secretKeyRef:
+                                description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                            type: object
                             nullable: true
                         type: object
                         nullable: true
@@ -112,7 +209,41 @@ spec:
                         type: string
                         nullable: true
                       clientSecret:
-                        type: string
+                        description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
+                        properties:
+                          value:
+                            type: string
+                            nullable: true
+                          valueFrom:
+                            description: Source for the value of an env var (core.v1.EnvVarSource).
+                            properties:
+                              secretKeyRef:
+                                description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                              configMapKeyRef:
+                                description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                                properties:
+                                  name:
+                                    type: string
+                                  key:
+                                    type: string
+                                required:
+                                - name
+                                - key
+                                type: object
+                                nullable: true
+                            type: object
+                            nullable: true
+                        type: object
                         nullable: true
                       authorizationUrl:
                         type: string
@@ -145,15 +276,39 @@ spec:
                     type: string
                     nullable: true
                   apiKey:
+                    description: 'Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource).'
                     properties:
-                      secretName:
+                      value:
                         type: string
                         nullable: true
-                      secretKey:
-                        type: string
-                        nullable: true
-                      raw:
-                        type: string
+                      valueFrom:
+                        description: Source for the value of an env var (core.v1.EnvVarSource).
+                        properties:
+                          secretKeyRef:
+                            description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+                            required:
+                            - name
+                            - key
+                            type: object
+                            nullable: true
+                          configMapKeyRef:
+                            description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
+                            properties:
+                              name:
+                                type: string
+                              key:
+                                type: string
+                            required:
+                            - name
+                            - key
+                            type: object
+                            nullable: true
+                        type: object
                         nullable: true
                     type: object
                     nullable: true
@@ -366,6 +521,7 @@ spec:
                 nullable: true
               env:
                 items:
+                  description: 'Environment variable (core.v1.EnvVar): name + value or valueFrom.'
                   properties:
                     name:
                       type: string
@@ -373,31 +529,67 @@ spec:
                       type: string
                       nullable: true
                     valueFrom:
+                      description: Source for the value of an env var (core.v1.EnvVarSource).
                       properties:
                         secretKeyRef:
+                          description: Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector).
                           properties:
                             name:
                               type: string
-                              nullable: true
                             key:
                               type: string
-                              nullable: true
+                          required:
+                          - name
+                          - key
                           type: object
                           nullable: true
                         configMapKeyRef:
+                          description: Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector).
                           properties:
                             name:
                               type: string
-                              nullable: true
                             key:
                               type: string
-                              nullable: true
+                          required:
+                          - name
+                          - key
                           type: object
                           nullable: true
                       type: object
                       nullable: true
                   required:
                   - name
+                  type: object
+                type: array
+                nullable: true
+              envFrom:
+                items:
+                  description: Source for env vars from a whole Secret or ConfigMap (core.v1.EnvFromSource).
+                  properties:
+                    secretRef:
+                      description: Reference to a Secret or ConfigMap by name (core.v1.LocalObjectReference).
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                      nullable: true
+                    configMapRef:
+                      description: Reference to a Secret or ConfigMap by name (core.v1.LocalObjectReference).
+                      properties:
+                        name:
+                          type: string
+                      required:
+                      - name
+                      type: object
+                      nullable: true
+                    prefix:
+                      type: string
+                      nullable: true
+                    optional:
+                      type: boolean
+                      nullable: true
                   type: object
                 type: array
                 nullable: true

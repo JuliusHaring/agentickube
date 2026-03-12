@@ -48,36 +48,42 @@ keycloak:
   # Set realmImport: true to mount a ConfigMap and start Keycloak with --import-realm
   realmImport: false
 
-# Agent image defaults when creating agents from values (used if agent spec omits image)
-agentImage:
-  repository: ghcr.io/juliusharing/agentickube/agent
-  tag: ""
-  pullPolicy: IfNotPresent
-
-# Multiple Agent CRs: list of { name, spec }. spec is the full Agent spec (ai.juliusharing.com/v1).
-# Example: agents: [ { name: my-agent, spec: { llm: { modelName: qwen3:1.7b, baseUrl: http://ollama:11434/v1 }, ... } } ]
-#
-# Agent HTTP auth (optional). Use spec.auth to require authentication on the agent API:
-#   auth:
-#     type: basic          # or api_key | oauth2
-#     basic:
-#       username: { secretName: my-secret, secretKey: username }
-#       password: { secretName: my-secret, secretKey: password }
-#   auth:
-#     type: api_key
-#     apiKey:
-#       apiKey: { secretName: my-secret, secretKey: api-key }
-#   auth:
-#     type: oauth2
-#     oauth2:
-#       issuerUrl: https://keycloak.example.com/realms/my-realm   # required for JWT validation
-#       audience: my-client   # optional; verify aud claim if set
-#       tokenUrl: ...   # for clients to obtain tokens
-#       clientId: / clientSecret:   # for clients; optional bearerToken for static token fallback
-agents: []
-
-# Optional: create a default PVC for agent workspaces (e.g. when agents[].spec.workspace.persistentVolumeClaim.claimName references it)
-workspacePvc:
-  create: false
-  name: agent-workspace-pvc
-  size: 1Gi
+# Agent defaults and CRs (image used when agent spec omits image; workspace defaults; list of Agent CRs)
+agentickube:
+  image:
+    repository: ghcr.io/juliusharing/agentickube/agent
+    tag: ""
+    pullPolicy: IfNotPresent
+  # Workspace: default path and optional default PVC (agents can reference spec.workspace.persistentVolumeClaim.claimName)
+  workspace:
+    path: /workspace
+    pvc:
+      create: false
+      name: agent-workspace-pvc
+      size: 1Gi
+  # Multiple Agent CRs: list of { name, spec }. spec is the full Agent spec (ai.juliusharing.com/v1).
+  # Example: agents: [ { name: my-agent, spec: { llm: { modelName: qwen3:1.7b, baseUrl: http://ollama:11434/v1 }, ... } } ]
+  #
+  # Agent HTTP auth (optional). Use spec.auth to require authentication on the agent API.
+  # Credentials: value (literal) or valueFrom (same as core.v1.EnvVarSource: secretKeyRef or configMapKeyRef).
+  #   auth:
+  #     type: basic          # or api_key | oauth2
+  #     basic:
+  #       username: { valueFrom: { secretKeyRef: { name: my-secret, key: username } } }
+  #       password: { valueFrom: { secretKeyRef: { name: my-secret, key: password } } }
+  #   auth:
+  #     type: api_key
+  #     apiKey:
+  #       apiKey: { valueFrom: { secretKeyRef: { name: my-secret, key: api-key } } }
+  #   auth:
+  #     type: oauth2
+  #     oauth2:
+  #       issuerUrl: https://keycloak.example.com/realms/my-realm   # required for JWT validation
+  #       audience: my-client   # optional; verify aud claim if set
+  #       tokenUrl: ...   # for clients to obtain tokens
+  #       clientId: ...   # for clients
+  #       clientSecret: { value: "..." } or { valueFrom: { secretKeyRef: { name: my-secret, key: client-secret } } }
+  #
+  # Optional spec.env (core.v1.EnvVar[]) and spec.envFrom (core.v1.EnvFromSource[]) for extra env vars
+  # or whole Secrets/ConfigMaps, same as Pod.spec.containers[].env / envFrom.
+  agents: []

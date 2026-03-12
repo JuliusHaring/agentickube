@@ -11,6 +11,7 @@ from models import (
     AgentSpec,
     APIKeyConfig,
     AuthConfig,
+    EnvFromSource,
     EnvVar,
     LLMConfig,
     OpenTelemetryConfig,
@@ -28,18 +29,34 @@ _SpecType = AgentSpec
 
 
 def _api_key_to_env(name: str, key: APIKeyConfig | None) -> list[client.V1EnvVar]:
-    """One env var from APIKeyConfig (raw or secretKeyRef). Empty if key is None or empty."""
+    """One env var from APIKeyConfig (value or valueFrom; same shape as core.v1.EnvVar)."""
     if not key:
         return []
-    if key.raw:
-        return [client.V1EnvVar(name=name, value=key.raw)]
-    if key.secret_name and key.secret_key:
+    if key.value:
+        return [client.V1EnvVar(name=name, value=key.value)]
+    vf = key.value_from
+    if not vf:
+        return []
+    if vf.secret_key_ref:
+        ref = vf.secret_key_ref
         return [
             client.V1EnvVar(
                 name=name,
                 value_from=client.V1EnvVarSource(
                     secret_key_ref=client.V1SecretKeySelector(
-                        name=key.secret_name, key=key.secret_key
+                        name=ref.name, key=ref.key
+                    )
+                ),
+            )
+        ]
+    if vf.config_map_key_ref:
+        ref = vf.config_map_key_ref
+        return [
+            client.V1EnvVar(
+                name=name,
+                value_from=client.V1EnvVarSource(
+                    config_map_key_ref=client.V1ConfigMapKeySelector(
+                        name=ref.name, key=ref.key
                     )
                 ),
             )
@@ -69,12 +86,9 @@ def auth_env(auth: AuthConfig | None) -> list[client.V1EnvVar]:
                     name="AUTH_OAUTH2_CLIENT_ID", value=auth.oauth2.client_id
                 )
             )
-        if auth.oauth2.client_secret:
-            env.append(
-                client.V1EnvVar(
-                    name="AUTH_OAUTH2_CLIENT_SECRET", value=auth.oauth2.client_secret
-                )
-            )
+        env.extend(
+            _api_key_to_env("AUTH_OAUTH2_CLIENT_SECRET", auth.oauth2.client_secret)
+        )
         if auth.oauth2.authorization_url:
             env.append(
                 client.V1EnvVar(
@@ -116,19 +130,10 @@ def llm_env(llm: LLMConfig | None) -> list[client.V1EnvVar]:
     ]
     if llm.api_key:
         key = llm.api_key
-        if key.raw:
-            env.append(client.V1EnvVar(name="LLM_API_KEY", value=key.raw))
-        elif key.secret_name and key.secret_key:
-            env.append(
-                client.V1EnvVar(
-                    name="LLM_API_KEY",
-                    value_from=client.V1EnvVarSource(
-                        secret_key_ref=client.V1SecretKeySelector(
-                            name=key.secret_name, key=key.secret_key
-                        )
-                    ),
-                )
-            )
+        if key.value:
+            env.append(client.V1EnvVar(name="LLM_API_KEY", value=key.value))
+        else:
+            env.extend(_api_key_to_env("LLM_API_KEY", key))
     if llm.provider:
         env.append(client.V1EnvVar(name="LLM_PROVIDER", value=llm.provider))
     return env
@@ -158,11 +163,12 @@ def otel_env(
 
 
 def extra_env(env_vars: list[EnvVar]) -> list[client.V1EnvVar]:
+    """Convert spec.env (core.v1.EnvVar list) to V1EnvVar list."""
     out: list[client.V1EnvVar] = []
     for ev in env_vars:
         if ev.value_from:
             src = ev.value_from
-            if src.secret_key_ref and src.secret_key_ref.name:
+            if src.secret_key_ref:
                 out.append(
                     client.V1EnvVar(
                         name=ev.name,
@@ -174,7 +180,7 @@ def extra_env(env_vars: list[EnvVar]) -> list[client.V1EnvVar]:
                         ),
                     )
                 )
-            elif src.config_map_key_ref and src.config_map_key_ref.name:
+            elif src.config_map_key_ref:
                 out.append(
                     client.V1EnvVar(
                         name=ev.name,
@@ -195,6 +201,29 @@ def trigger_env(query: str | None) -> list[client.V1EnvVar]:
     if not query:
         return []
     return [client.V1EnvVar(name="AGENT_QUERY", value=query)]
+
+
+def env_from_sources(sources: list[EnvFromSource]) -> list[client.V1EnvFromSource]:
+    """Convert spec.envFrom (core.v1.EnvFromSource list) to V1EnvFromSource list."""
+    out: list[client.V1EnvFromSource] = []
+    for s in sources:
+        if s.secret_ref:
+            out.append(
+                client.V1EnvFromSource(
+                    secret_ref=client.V1LocalObjectReference(name=s.secret_ref.name),
+                    prefix=(s.prefix or "").strip() or None,
+                )
+            )
+        elif s.config_map_ref:
+            out.append(
+                client.V1EnvFromSource(
+                    config_map_ref=client.V1LocalObjectReference(
+                        name=s.config_map_ref.name
+                    ),
+                    prefix=(s.prefix or "").strip() or None,
+                )
+            )
+    return out
 
 
 # ── Shared K8s object converters ─────────────────────────────────────────────

@@ -85,14 +85,11 @@ def validate_auth_config() -> None:
         if not auth_config.api_key:
             raise ValueError("AUTH_TYPE=api_key requires AUTH_API_KEY")
     elif auth_config.type == "oauth2":
-        has_issuer = bool(
+        if not (
             auth_config.oauth2_issuer_url and auth_config.oauth2_issuer_url.strip()
-        )
-        has_static = bool(auth_config.oauth2_bearer_token)
-        if not has_issuer and not has_static:
+        ):
             raise ValueError(
-                "AUTH_TYPE=oauth2 requires AUTH_OAUTH2_ISSUER_URL (JWT validation) "
-                "or AUTH_OAUTH2_BEARER_TOKEN (static token)"
+                "AUTH_TYPE=oauth2 requires AUTH_OAUTH2_ISSUER_URL (JWT validation)"
             )
 
 
@@ -158,9 +155,6 @@ def _verify_oauth2(
             raise HTTPException(
                 status_code=401, detail="Invalid or expired Bearer token"
             )
-        return token
-    # Fallback: static token comparison (legacy)
-    if auth_config.oauth2_bearer_token and token == auth_config.oauth2_bearer_token:
         return token
     raise HTTPException(status_code=401, detail="Invalid Bearer token")
 

@@ -14,13 +14,38 @@ class _Base(BaseModel):
     model_config = ConfigDict(populate_by_name=True, alias_generator=_to_camel)
 
 
+# ── Kubernetes core v1–compatible types (env/valueFrom) ─────────────────────
+
+
+class SecretKeySelector(_Base):
+    """Selects a key of a Secret in the pod's namespace (core.v1.SecretKeySelector)."""
+
+    name: str
+    key: str
+
+
+class ConfigMapKeySelector(_Base):
+    """Selects a key of a ConfigMap (core.v1.ConfigMapKeySelector)."""
+
+    name: str
+    key: str
+
+
+class EnvVarSource(_Base):
+    """Source for the value of an env var (core.v1.EnvVarSource)."""
+
+    secret_key_ref: SecretKeySelector | None = None
+    config_map_key_ref: ConfigMapKeySelector | None = None
+
+
 # ── LLM ─────────────────────────────────────────────────────────────────────
 
 
 class APIKeyConfig(_Base):
-    secret_name: str | None = None
-    secret_key: str | None = None
-    raw: str | None = None
+    """Secretable string: value (literal) or valueFrom (core.v1.EnvVarSource)."""
+
+    value: str | None = None
+    value_from: EnvVarSource | None = None
 
 
 class LLMConfig(_Base):
@@ -144,23 +169,30 @@ class Toleration(_Base):
     toleration_seconds: int | None = None
 
 
-# ── Extra Env ────────────────────────────────────────────────────────────────
-
-
-class KeyRef(_Base):
-    name: str | None = None
-    key: str | None = None
-
-
-class EnvVarSource(_Base):
-    secret_key_ref: KeyRef | None = None
-    config_map_key_ref: KeyRef | None = None
+# ── Extra env / envFrom (core.v1.EnvVar, EnvFromSource) ──────────────────────
 
 
 class EnvVar(_Base):
+    """Environment variable (core.v1.EnvVar): name + value or valueFrom."""
+
     name: str
     value: str | None = None
     value_from: EnvVarSource | None = None
+
+
+class LocalObjectReference(_Base):
+    """Reference to a Secret or ConfigMap by name (core.v1.LocalObjectReference)."""
+
+    name: str
+
+
+class EnvFromSource(_Base):
+    """Source for env vars from a whole Secret or ConfigMap (core.v1.EnvFromSource)."""
+
+    secret_ref: LocalObjectReference | None = None
+    config_map_ref: LocalObjectReference | None = None
+    prefix: str | None = None
+    optional: bool | None = None
 
 
 # ── Auth (agent HTTP auth: basic, api_key, oauth2) ───────────────────────────
@@ -180,11 +212,11 @@ class AuthApiKeyConfig(_Base):
 
 
 class AuthOAuth2Config(_Base):
-    """OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2."""
+    """OAuth2 Bearer token and optional IdP URLs. bearer_token required when type=oauth2. Use valueFrom for client_secret."""
 
     bearer_token: APIKeyConfig | None = None
     client_id: str | None = None
-    client_secret: str | None = None
+    client_secret: APIKeyConfig | None = None
     authorization_url: str | None = None
     token_url: str | None = None
     introspection_url: str | None = None
@@ -244,5 +276,6 @@ class AgentSpec(_Base):
     tolerations: list[Toleration] | None = None
     service_account_name: str | None = None
     env: list[EnvVar] | None = None
+    env_from: list[EnvFromSource] | None = None
     open_telemetry: OpenTelemetryConfig | None = None
     trigger: TriggerConfig | None = None

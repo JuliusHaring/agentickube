@@ -1,13 +1,13 @@
-{{- if .Values.workspacePvc.create }}
+{{- if .Values.agentickube.workspace.pvc.create }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ .Values.workspacePvc.name }}
+  name: {{ .Values.agentickube.workspace.pvc.name }}
   namespace: {{ .Release.Namespace }}
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: {{ .Values.workspacePvc.size }}
+      storage: {{ .Values.agentickube.workspace.pvc.size }}
 {{- end }}

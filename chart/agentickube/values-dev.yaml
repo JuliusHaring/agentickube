@@ -1,8 +1,7 @@
 # Example: agents with Ollama + OTEL + Jaeger.
+# For local development only. Do not use these default credentials (Keycloak, etc.) in production.
 # Usage: helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
 # When you remove an agent from the list below, upgrade will delete that CR (and the operator will remove its pods).
-#
-# Temporary: Gemini 3 for dev. Do not commit real API keys long-term; use a Secret + apiKey.secretName/secretKey in production.
 _llm: &llm
   modelName: qwen3:1.7b
   baseUrl: http://ollama:11434/v1
@@ -38,17 +37,18 @@ keycloak:
   clientId: agent
   clientSecret: agent-dev-secret
 
-agentImage:
-  repository: agentickube-agent
-  tag: latest
-  pullPolicy: IfNotPresent
-
-workspacePvc:
-  create: true
-  name: agent-workspace-pvc
-  size: 1Gi
-
-agents:
+agentickube:
+  image:
+    repository: agentickube-agent
+    tag: latest
+    pullPolicy: IfNotPresent
+  workspace:
+    path: /workspace
+    pvc:
+      create: true
+      name: agent-workspace-pvc
+      size: 1Gi
+  agents:
   - name: stock-fetcher
     spec:
       image: agentickube-agent:latest

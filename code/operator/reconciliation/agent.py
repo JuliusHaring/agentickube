@@ -5,6 +5,8 @@ optional skills ConfigMap, and Service).  Used by the Kopf handlers in main.py.
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 import kopf
 from kubernetes import client
 from kubernetes.client.rest import ApiException
@@ -25,6 +27,7 @@ from .common import (
     build_pod_sc,
     build_resources,
     build_tolerations,
+    env_from_sources,
     extra_env,
     llm_env,
     otel_env,
@@ -84,12 +87,20 @@ def _agent_recommended_labels(name: str) -> dict[str, str]:
 
 
 def _mcp_env(servers: list[MCPServerConfig]) -> list[client.V1EnvVar]:
+    """Build MCP_SERVER_* env vars. Rejects URLs with embedded credentials (user:pass@host)."""
     env: list[client.V1EnvVar] = []
     for i, srv in enumerate(servers, start=1):
+        url_raw = srv.url.strip()
+        parsed = urlparse(url_raw)
+        if "@" in parsed.netloc:
+            raise ValueError(
+                f"MCP server {i} URL must not contain credentials in the URL "
+                "(e.g. user:pass@host). Use spec.env or spec.envFrom for secrets."
+            )
         transport = srv.type.strip().lower()
         if transport not in ("sse", "streamable_http"):
             transport = "streamable_http"
-        env.append(client.V1EnvVar(name=f"MCP_SERVER_{i}_URL", value=srv.url.strip()))
+        env.append(client.V1EnvVar(name=f"MCP_SERVER_{i}_URL", value=url_raw))
         env.append(client.V1EnvVar(name=f"MCP_SERVER_{i}_TYPE", value=transport))
     return env
 
@@ -279,6 +290,7 @@ def _build_agent_pod_template(
     env = _build_agent_env(spec, name, has_inline_cm)
     if extra_env_vars:
         env = [*env, *extra_env_vars]
+    env_from = env_from_sources(spec.env_from or [])
 
     ports = None if command else [client.V1ContainerPort(container_port=80)]
 
@@ -288,6 +300,7 @@ def _build_agent_pod_template(
         image_pull_policy=(spec.image_pull_policy or "").strip() or DEFAULT_PULL_POLICY,
         command=command,
         env=env,
+        env_from=env_from or None,
         ports=ports,
         volume_mounts=[
             client.V1VolumeMount(name=WORKSPACE_VOL, mount_path=ws_path),

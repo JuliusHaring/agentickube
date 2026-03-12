@@ -14,6 +14,19 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/query")
 
 SESSION_HEADER = "X-Session-Id"
+MAX_RESPONSE_LOG_CHARS = 200
+
+
+def _log_response(result: str) -> None:
+    """Log response length and a short prefix to avoid leaking full content."""
+    if len(result) <= MAX_RESPONSE_LOG_CHARS:
+        logger.info("Query response length=%d: %s", len(result), result)
+    else:
+        logger.info(
+            "Query response length=%d: %s... [truncated]",
+            len(result),
+            result[:MAX_RESPONSE_LOG_CHARS],
+        )
 
 
 class QueryRequest(BaseModel):
@@ -42,7 +55,7 @@ def _query(
     if span.is_recording() and session_id:
         span.set_attribute("session.id", session_id)
     result = agent_loop(query=request.query, session_id=session_id)
-    logger.info("Query response: %s", result)
+    _log_response(result)
     body = QueryResponse(response=result).model_dump()
     headers = {SESSION_HEADER: session_id} if session_id else {}
     return JSONResponse(content=body, headers=headers)
