@@ -41,7 +41,7 @@ def _fetch_one(
 def fetch_url(
     url: str,
     user_agent: str | None = None,
-) -> str:
+) -> tuple[str, str]:
     """Fetch a URL with GET and return the response body as text.
 
     Args:

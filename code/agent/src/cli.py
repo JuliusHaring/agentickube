@@ -34,7 +34,6 @@ def main() -> int:
     logger.info("CLI run started: query=%s", query[:120])
     result = agent_loop(
         query=query,
-        use_memory=agent_cli_config.conversation_memory_enabled,
     )
 
     if result.startswith("Agent error:"):
@@ -47,7 +46,7 @@ def main() -> int:
 
     provider = trace.get_tracer_provider()
     if hasattr(provider, "force_flush"):
-        provider.force_flush(timeout_millis=5000)
+        provider.force_flush(timeout_millis=5000)  # type: ignore[call-non-callable]
 
     return 0
 

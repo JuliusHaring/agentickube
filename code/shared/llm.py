@@ -3,7 +3,7 @@
 Used by both the agent and orchestrator images.
 """
 
-from typing import Literal, Optional
+from typing import Literal
 
 from pydantic_ai.models import Model
 from pydantic_ai.models.openai import OpenAIChatModel
@@ -33,12 +33,12 @@ class LLMConfig(BaseSettings):
 
     provider: Literal["openai", "google", "huggingface", "ollama"] = "openai"
     model_name: str
-    base_url: Optional[str] = None
+    base_url: str | None = None
     api_key: str = ""
 
 
 def get_model(config: LLMConfig | None = None) -> Model:
-    config = config or LLMConfig()
+    config = config or LLMConfig()  # type: ignore - managed by pydantic settings
     provider_cls, model_cls = PROVIDER_MAP[config.provider]
 
     client_kwargs = {}
@@ -48,7 +48,7 @@ def get_model(config: LLMConfig | None = None) -> Model:
         client_kwargs["base_url"] = config.base_url
 
     provider = provider_cls(**client_kwargs)
-    model = model_cls(model_name=config.model_name, provider=provider)
+    model = model_cls(model_name=config.model_name, provider=provider)  # type: ignore
 
     logger.info(f"Using provider: {provider}")
 

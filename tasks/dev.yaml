@@ -1,15 +1,17 @@
-version: '3'
+version: "3"
 
 tasks:
   install:
     - uv pip install -r environments/all-requirements.txt
     - pre-commit install
-    
+
   format: ruff format
   lint: ruff check .
   lint-fix: ruff check . --fix
+  type: ty check .
 
   all:
     - task: install
     - task: format
     - task: lint-fix
+    - task: type

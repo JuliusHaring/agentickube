@@ -40,7 +40,7 @@ def orchestrate(
     )
 
     try:
-        llm_config = LLMConfig()
+        llm_config = LLMConfig()  # type: ignore - managed by pydantic settings
     except Exception:
         llm_config = None
 

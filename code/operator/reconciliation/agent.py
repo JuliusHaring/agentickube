@@ -234,7 +234,7 @@ def ensure_agent_skills_cm(
         ),
         data={f"{k}.md": v for k, v in inline.items()},
     )
-    kopf.append_owner_reference(cm, body)
+    kopf.append_owner_reference(cm, body)  # type: ignore[invalid-argument-type]
 
     core = client.CoreV1Api()
     try:
@@ -333,7 +333,7 @@ def build_agent_deployment(
             template=template,
         ),
     )
-    kopf.append_owner_reference(deployment, body)
+    kopf.append_owner_reference(deployment, body)  # type: ignore[invalid-argument-type]
     kopf.label(deployment, nested="spec.template")
     return deployment
 
@@ -367,7 +367,7 @@ def build_agent_job(
             ttl_seconds_after_finished=trigger.ttl_seconds_after_finished,
         ),
     )
-    kopf.append_owner_reference(job, body)
+    kopf.append_owner_reference(job, body)  # type: ignore[invalid-argument-type]
     return job
 
 
@@ -406,7 +406,7 @@ def build_agent_cronjob(
             ),
         ),
     )
-    kopf.append_owner_reference(cronjob, body)
+    kopf.append_owner_reference(cronjob, body)  # type: ignore[invalid-argument-type]
     return cronjob
 
 
@@ -425,7 +425,7 @@ def _build_agent_service(name: str, namespace: str, body: dict) -> client.V1Serv
             ports=[client.V1ServicePort(port=80, target_port=80)],
         ),
     )
-    kopf.append_owner_reference(svc, body)
+    kopf.append_owner_reference(svc, body)  # type: ignore[invalid-argument-type]
     return svc
 
 

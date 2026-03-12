@@ -1,11 +1,11 @@
-from pydantic_ai.messages import ModelResponse
+from pydantic_ai import AgentRunResult
 
 
-def extract_steps_from_run(result: ModelResponse) -> list[dict]:
+def extract_steps_from_run(result: AgentRunResult[str]) -> list[dict]:
     """Build list of {tool, args, result} from the run's new messages (tool calls + returns)."""
     steps: list[dict] = []
     try:
-        messages = result.new_messages()
+        messages = list(result.new_messages())
     except Exception:
         return steps
     pending_calls: list[tuple[str, dict]] = []

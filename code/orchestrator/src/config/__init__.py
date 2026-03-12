@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -14,10 +13,11 @@ logger = get_logger(__name__)
 class AgentEndpoint(BaseModel):
     name: str
     url: str
+    description: str | None = None
 
 
 class OrchestratorConfig(BaseSettings):
-    orchestrator_name: Optional[str] = Field(
+    orchestrator_name: str | None = Field(
         default=None, validation_alias="ORCHESTRATOR_NAME"
     )
     strategy: str = Field(default="sequence", validation_alias="ORCHESTRATOR_STRATEGY")
@@ -28,7 +28,7 @@ class OrchestratorConfig(BaseSettings):
 
     @field_validator("agents", mode="before")
     @classmethod
-    def parse_agents(cls, v: object) -> list[dict]:
+    def parse_agents(cls, v: object) -> list:
         agents = _agents_from_env()
         if agents:
             return agents
@@ -38,7 +38,7 @@ class OrchestratorConfig(BaseSettings):
 
 
 class OrchestratorCLIConfig(OrchestratorConfig):
-    agent_query: Optional[str] = Field(default=None, validation_alias="AGENT_QUERY")
+    agent_query: str | None = Field(default=None, validation_alias="AGENT_QUERY")
 
 
 def _agents_from_env() -> list[dict]:

@@ -7,7 +7,6 @@ Pydantic AI use the same tracer.
 """
 
 import os
-from typing import Optional
 
 from fastapi import FastAPI
 from pydantic import Field
@@ -31,7 +30,7 @@ class OtelConfig(BaseSettings):
     )
 
 
-_config: Optional[OtelConfig] = None
+_config: OtelConfig | None = None
 
 
 def _get_config() -> OtelConfig:
@@ -82,7 +81,7 @@ def setup_fastapi_opentelemetry(
             try:
                 provider = trace.get_tracer_provider()
                 if hasattr(provider, "force_flush"):
-                    provider.force_flush(timeout_millis=3000)
+                    provider.force_flush(timeout_millis=3000)  # type: ignore[call-non-callable]
             except Exception:
                 pass
             return response

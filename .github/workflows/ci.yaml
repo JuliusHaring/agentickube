@@ -18,6 +18,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            environments/dev-requirements.txt
 
       - name: Install dev dependencies
         run: pip install -r environments/dev-requirements.txt
@@ -27,6 +30,31 @@ jobs:
 
       - name: Ruff lint
         run: ruff check .
+
+  type:
+    name: Type check (${{ matrix.package }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [operator, agent, orchestrator]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            environments/*.txt
+
+      - name: Install project + dev dependencies
+        run: pip install -r environments/all-requirements.txt
+
+      - name: ty check ${{ matrix.package }}
+        run: ty check code/${{ matrix.package }} code/shared
 
   manifests:
     name: Generate and validate manifests
@@ -39,6 +67,9 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: |
+            environments/shared-requirements.txt
 
       - name: Install Task
         uses: arduino/setup-task@v2

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from fastapi import APIRouter
 from fastapi.params import Header
 from fastapi.responses import JSONResponse
@@ -26,7 +24,7 @@ class QueryResponse(BaseModel):
 @router.post("")
 def _query(
     request: QueryRequest,
-    session_id: Optional[str] = Header(
+    session_id: str | None = Header(  # type:ignore[invalid-parameter-default]
         default=None,
         alias=SESSION_HEADER,
         description="Session ID. Optional. Forwarded to agents for conversation memory.",
