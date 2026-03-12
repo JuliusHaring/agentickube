@@ -1,4 +1,4 @@
-"""Shared session ID validation and history storage. Used by agent and orchestrator."""
+"""Shared session ID validation and history storage. Used by the agent."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-# Operator Deployment: watches Agent and Orchestrator CRs and reconciles them to Deployments/Jobs/CronJobs.
+# Operator Deployment: watches Agent CRs and reconciles them to Deployments/Jobs/CronJobs.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

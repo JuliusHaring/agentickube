@@ -1,5 +1,5 @@
 """
-Shared OpenTelemetry setup for agent and orchestrator.
+Shared OpenTelemetry setup for the agent.
 
 When OTEL_EXPORTER_OTLP_ENDPOINT is set (e.g. by the operator from CRD spec.openTelemetry),
 configures the Logfire SDK to export traces/metrics to that endpoint so FastAPI and

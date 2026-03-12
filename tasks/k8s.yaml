@@ -7,7 +7,6 @@ tasks:
 
   init-ns: 
     - kubectl delete agent --all -n agentickube-ns
-    - kubectl delete orchestrator --all -n agentickube-ns
     - kubectl delete deployment --all -n agentickube-ns
     - kubectl delete replicaset --all -n agentickube-ns
     - kubectl delete pod --all -n agentickube-ns

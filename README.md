@@ -9,7 +9,7 @@
 
 **Try it:** install with Helm (see below), or peek at the [chart values](chart/agentickube/values.yaml) and [values-dev](chart/agentickube/values-dev.yaml) for examples.
 
-Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Optionally coordinate multiple agents with an `Orchestrator` (currently sequence or team). Your models, your cluster.
+Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator reconciles it into a Deployment, one-off Job, or CronJob. Your models, your cluster.
 
 | | |
 |---|---|
@@ -17,7 +17,6 @@ Define an `Agent` in YAML (model, API, optional MCP and workspace); the operator
 | 🔌 | **Your LLM** — Ollama, OpenAI, any compatible API |
 | 🔧 | **MCP + skills** — [MCP tools & knowledge](https://modelcontextprotocol.io/), [SKILL.md format](code/agent/workspace/skills/create-skill/SKILL.md) |
 | 📁 | **Mountable Workspace** — optional PVC for persistent state and files |
-| 🤝 | **Orchestrator** — optional multi-agent coordination (sequence, team) |
 | 📦 | **Helm OCI** — one command to install CRDs + operator from GHCR |
 
 ## Installation
@@ -43,17 +42,16 @@ helm install agentickube oci://ghcr.io/juliusharing/agentickube/chart \
   --set operator.image.tag=2.1.0
 ```
 
-**Optional stack (values):** Enable Ollama (`ollama.enabled`), OpenTelemetry collector (`otel.enabled`), and Jaeger (`jaeger.enabled`) for local or dev clusters. Use `agents: [{ name, spec }, ...]` and `orchestrators: [{ name, spec }, ...]` to create multiple Agent and Orchestrator CRs from the chart. See [chart/agentickube/values.yaml](chart/agentickube/values.yaml) and [chart/agentickube/values-dev.yaml](chart/agentickube/values-dev.yaml) for examples.
+**Optional stack (values):** Enable Ollama (`ollama.enabled`), OpenTelemetry collector (`otel.enabled`), and Jaeger (`jaeger.enabled`) for local or dev clusters. Use `agents: [{ name, spec }, ...]` to create multiple Agent CRs from the chart. See [chart/agentickube/values.yaml](chart/agentickube/values.yaml) and [chart/agentickube/values-dev.yaml](chart/agentickube/values-dev.yaml) for examples.
 
-**Images** (all on GHCR; chart references these by default):
+**Images** (on GHCR; chart references these by default):
 
 - `ghcr.io/juliusharing/agentickube/operator:latest` (and versioned tags)
 - `ghcr.io/juliusharing/agentickube/agent:latest`
-- `ghcr.io/juliusharing/agentickube/orchestrator:latest`
 
 Ensure your cluster can pull from GHCR (e.g. public packages, or configure imagePullSecrets if private).
 
-**Create Agents/Orchestrators** — set `agents` and `orchestrators` in values (see [values-dev.yaml](chart/agentickube/values-dev.yaml)), or `kubectl apply` your own Agent/Orchestrator YAML.
+**Create Agents** — set `agents` in values (see [values-dev.yaml](chart/agentickube/values-dev.yaml)), or `kubectl apply` your own Agent YAML.
 
 ### GitOps (ArgoCD / Flux)
 
@@ -61,7 +59,7 @@ Use the same chart from OCI: point your Application or HelmRelease to `oci://ghc
 
 ### From clone (developers)
 
-From the repo root: `task deploy` builds images, generates CRDs into the chart, and runs `helm upgrade --install` with [values-dev.yaml](chart/agentickube/values-dev.yaml) (Ollama, OTEL, Jaeger, one example Agent and Orchestrator). Run `task operator:run` for an out-of-cluster operator, or `task agent:run` for a local agent. See [CONTRIBUTING.md](CONTRIBUTING.md).
+From the repo root: `task deploy` builds images, generates CRDs into the chart, and runs `helm upgrade --install` with [values-dev.yaml](chart/agentickube/values-dev.yaml) (Ollama, OTEL, Jaeger, example Agents). Run `task operator:run` for an out-of-cluster operator, or `task agent:run` for a local agent. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

@@ -9,7 +9,7 @@ tasks:
   lint: ruff check .
   lint-fix: ruff check . --fix
   type: ty check .
-  commit-check: sh -c '[ "$(git branch --show-current)" = "main" ] && exit 0; cz check --rev-range main..HEAD'
+  commit-check: sh -c '[ "$(git rev-parse HEAD)" = "$(git rev-parse main)" ] && exit 0; cz check --rev-range main..HEAD'
 
   all:
     - task: install

@@ -7,7 +7,6 @@ includes:
   chart: tasks/chart.yaml
   agent: code/agent/tasks/agent.yaml
   operator: code/operator/tasks/operator.yaml
-  orchestrator: code/orchestrator/tasks/orchestrator.yaml
 
 tasks:
   default:
