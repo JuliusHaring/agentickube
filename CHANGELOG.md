@@ -2,6 +2,35 @@
 
 <!-- version list -->
 
+## v4.2.0 (2026-03-12)
+
+### Bug Fixes
+
+- Fix workspace config import path
+  ([`24bf103`](https://github.com/JuliusHaring/agentickube/commit/24bf1035a771dfe79fd948d6d2656632247818c5))
+
+### Chores
+
+- Add proper workspace skill to dev
+  ([`55db8d0`](https://github.com/JuliusHaring/agentickube/commit/55db8d00c0e952a88ced7ddde22887fbd84fbf91))
+
+### Features
+
+- Give skills proper error handling in agent loop
+  ([`c8d5e5e`](https://github.com/JuliusHaring/agentickube/commit/c8d5e5e65806cd1768b4880cf47a74d8ffa80830))
+
+- Improve create-skill skill with its own code
+  ([`d0d5e89`](https://github.com/JuliusHaring/agentickube/commit/d0d5e89e625ae34e0f102f9627d434d875def04c))
+
+### Refactoring
+
+- Remove brkoen create-skills skill
+  ([`35f51dd`](https://github.com/JuliusHaring/agentickube/commit/35f51dd43c2596c0f9ef7909c168d6120911b335))
+
+- Remove skills prompt
+  ([`4bdc173`](https://github.com/JuliusHaring/agentickube/commit/4bdc17347791dd3db7db193023491ac9861cdaf8))
+
+
 ## v4.1.0 (2026-03-12)
 
 ### Chores
