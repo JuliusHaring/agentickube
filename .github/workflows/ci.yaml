@@ -20,10 +20,10 @@ jobs:
       - name: Check branch name
         run: |
           branch="${{ github.head_ref }}"
-          # Allowed: type/description (e.g. feature/add-button, fix/typo)
-          if ! echo "$branch" | grep -qE '^(feature|fix|chore|docs|style|refactor|perf|test|build|ci|release)/[a-zA-Z0-9._/-]+$'; then
-            echo "::error::Branch name must follow pattern: type/description (e.g. feature/add-button, fix/typo)"
-            echo "Allowed types: feature, fix, chore, docs, style, refactor, perf, test, build, ci, release"
+          # Allowed: type/description or type!/description or type!: description (e.g. feature/add-button, feat!/remove-thing, feat!: remove orchestrator)
+          if ! echo "$branch" | grep -qE '^(feature|feat|fix|chore|docs|style|refactor|perf|test|build|ci|release)!?[/:][a-zA-Z0-9._/ :\-]+$'; then
+            echo "::error::Branch name must follow pattern: type/description (e.g. feature/add-button, fix/typo, feat!: remove orchestrator)"
+            echo "Allowed types: feature, feat, fix, chore, docs, style, refactor, perf, test, build, ci, release (optional ! for breaking change; / or : before description)"
             exit 1
           fi
           echo "Branch name OK: $branch"
