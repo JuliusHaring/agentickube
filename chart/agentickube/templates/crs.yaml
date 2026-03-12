@@ -1,4 +1,4 @@
-{{- /* Agent and Orchestrator CRs as regular resources (no hooks). Hooks get deleted/recreated on upgrade and caused races. CRDs are pre-install so they exist before this manifest is applied. */}}
+{{- /* Agent CRs as regular resources (no hooks). Hooks get deleted/recreated on upgrade and caused races. CRDs are pre-install so they exist before this manifest is applied. */}}
 {{- if .Values.agents }}
 {{- range .Values.agents }}
 apiVersion: ai.juliusharing.com/v1
@@ -18,30 +18,6 @@ spec:
   {{- else }}
   image: {{ $.Values.agentImage.repository }}:{{ $.Values.agentImage.tag | default $.Chart.AppVersion | default "latest" }}
   imagePullPolicy: {{ $.Values.agentImage.pullPolicy }}
-  {{- end }}
----
-{{- end }}
-{{- end }}
-{{- if .Values.orchestrators }}
-{{- range .Values.orchestrators }}
-apiVersion: ai.juliusharing.com/v1
-kind: Orchestrator
-metadata:
-  name: {{ .name | quote }}
-  namespace: {{ $.Release.Namespace }}
-  labels:
-    agentickube.release: {{ $.Release.Name | quote }}
-    app.kubernetes.io/managed-by: {{ $.Release.Service | quote }}
-  annotations:
-    meta.helm.sh/release-name: {{ $.Release.Name | quote }}
-    meta.helm.sh/release-namespace: {{ $.Release.Namespace | quote }}
-spec:
-  {{- if .spec }}
-  {{- toYaml .spec | nindent 2 }}
-  {{- else }}
-  image: {{ $.Values.orchestratorImage.repository }}:{{ $.Values.orchestratorImage.tag | default $.Chart.AppVersion | default "latest" }}
-  imagePullPolicy: {{ $.Values.orchestratorImage.pullPolicy }}
-  agents: []
   {{- end }}
 ---
 {{- end }}

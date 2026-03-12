@@ -1,6 +1,6 @@
 """Shared LLM configuration and provider selection.
 
-Used by both the agent and orchestrator images.
+Used by the agent image.
 """
 
 from typing import Literal

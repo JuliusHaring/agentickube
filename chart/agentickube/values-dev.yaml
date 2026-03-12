@@ -1,6 +1,6 @@
-# Example: agent sequence for stock analytics (Ollama + OTEL + Jaeger).
+# Example: agents with Ollama + OTEL + Jaeger.
 # Usage: helm upgrade --install agentickube ./chart/agentickube -f chart/agentickube/values-dev.yaml -n agentickube-ns --create-namespace
-# When you remove an agent/orchestrator from the lists below, upgrade will delete that CR (and the operator will remove its pods).
+# When you remove an agent from the list below, upgrade will delete that CR (and the operator will remove its pods).
 #
 # Temporary: Gemini 3 for dev. Do not commit real API keys long-term; use a Secret + apiKey.secretName/secretKey in production.
 _llm: &llm
@@ -27,11 +27,6 @@ jaeger:
 
 agentImage:
   repository: agentickube-agent
-  tag: latest
-  pullPolicy: IfNotPresent
-
-orchestratorImage:
-  repository: agentickube-orchestrator
   tag: latest
   pullPolicy: IfNotPresent
 
@@ -125,26 +120,4 @@ agents:
         enabled: true
         endpoint: http://otel-collector:4318
         serviceName: analyst-momentum
-        samplingRatio: 1.0
-
-orchestrators:
-  - name: stock-analytics-sequence
-    spec:
-      image: agentickube-orchestrator:latest
-      imagePullPolicy: IfNotPresent
-      llm: *llm
-      agents:
-        - name: stock-fetcher
-          description: Step 1. Fetches stock data (Yahoo, top movers). Only agent that fetches; creates fetch-stocks skill if needed.
-        - name: analyst-risk
-          description: Step 2. Risk assessment on fetcher output only (volatility, drawdown, tail risk). Does not fetch.
-        - name: analyst-momentum
-          description: Step 3. Momentum/technical analysis on data from prior steps. Does not fetch.
-      strategy:
-        type: sequence
-        maxRounds: 10
-      openTelemetry:
-        enabled: true
-        endpoint: http://otel-collector:4318
-        serviceName: stock-analytics-sequence
         samplingRatio: 1.0

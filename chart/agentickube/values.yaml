@@ -40,18 +40,9 @@ agentImage:
   tag: ""
   pullPolicy: IfNotPresent
 
-# Orchestrator image defaults when creating orchestrators from values
-orchestratorImage:
-  repository: ghcr.io/juliusharing/agentickube/orchestrator
-  tag: ""
-  pullPolicy: IfNotPresent
-
 # Multiple Agent CRs: list of { name, spec }. spec is the full Agent spec (ai.juliusharing.com/v1).
 # Example: agents: [ { name: my-agent, spec: { llm: { modelName: qwen3:1.7b, baseUrl: http://ollama:11434/v1 }, ... } } ]
 agents: []
-
-# Multiple Orchestrator CRs: list of { name, spec }. spec must include agents: [ { name: "agent-name" }, ... ].
-orchestrators: []
 
 # Optional: create a default PVC for agent workspaces (e.g. when agents[].spec.workspace.persistentVolumeClaim.claimName references it)
 workspacePvc:

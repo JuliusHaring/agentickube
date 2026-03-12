@@ -13,7 +13,7 @@ tasks:
       - helm upgrade --install agentickube ./chart/agentickube -n agentickube-ns --create-namespace
 
   install-dev:
-    desc: Install or upgrade the chart with dev values (Ollama, OTEL, Jaeger, example agents/orchestrators)
+    desc: Install or upgrade the chart with dev values (Ollama, OTEL, Jaeger, example agents)
     deps:
       - task: :operator:generate
     cmds:

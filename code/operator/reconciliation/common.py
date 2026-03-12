@@ -1,6 +1,6 @@
 """
-Shared helpers for reconciling Agent and Orchestrator specs into
-Kubernetes resources.  Imported by reconciliation.agent and reconciliation.orchestrator.
+Shared helpers for reconciling Agent specs into
+Kubernetes resources.  Imported by reconciliation.agent.
 """
 
 from __future__ import annotations
@@ -12,7 +12,6 @@ from models import (
     EnvVar,
     LLMConfig,
     OpenTelemetryConfig,
-    OrchestratorSpec,
 )
 
 # ── Constants ────────────────────────────────────────────────────────────────
@@ -23,7 +22,7 @@ CLI_COMMAND = ["python", "app/cli.py"]
 
 # ── Shared environment variable builders ─────────────────────────────────────
 
-_SpecType = AgentSpec | OrchestratorSpec
+_SpecType = AgentSpec
 
 
 def llm_env(llm: LLMConfig | None) -> list[client.V1EnvVar]:

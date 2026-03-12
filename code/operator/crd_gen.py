@@ -1,5 +1,5 @@
 """
-Generate chart/agentickube/templates/crd-agent.yaml and crd-orchestrator.yaml from
+Generate chart/agentickube/templates/crd-agent.yaml from
 the operator's Pydantic models (single source of truth).
 
 Usage (from repo root):
@@ -27,7 +27,7 @@ _repo_root = _operator_dir.parents[1]
 if str(_operator_dir) not in sys.path:
     sys.path.insert(0, str(_operator_dir))
 
-from models import AgentSpec, OrchestratorSpec  # noqa: E402
+from models import AgentSpec  # noqa: E402
 
 
 def _json_schema_to_openapi(schema: dict) -> dict:
@@ -194,17 +194,6 @@ CRDS = [
         "short_names": ["ag"],
         "output": "chart/agentickube/templates/crd-agent.yaml",
     },
-    {
-        "spec_cls": OrchestratorSpec,
-        "description": "Orchestrator custom resource (ai.juliusharing.com).",
-        "crd_name": "orchestrators.ai.juliusharing.com",
-        "group": "ai.juliusharing.com",
-        "plural": "orchestrators",
-        "singular": "orchestrator",
-        "kind": "Orchestrator",
-        "short_names": ["orch"],
-        "output": "chart/agentickube/templates/crd-orchestrator.yaml",
-    },
 ]
 
 
@@ -241,7 +230,7 @@ def _write_crd(crd_def: dict, yaml_module, *, stdout: bool = False) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(
-        description="Generate Agent and Orchestrator CRDs from Pydantic models"
+        description="Generate Agent CRD from Pydantic models"
     )
     parser.add_argument(
         "--stdout",

@@ -1,6 +1,6 @@
 apiVersion: v2
 name: agentickube
-description: Agents in Kubernetes — declarative, yours, no lock-in. Operator for Agent and Orchestrator CRDs.
+description: Agents in Kubernetes — declarative, yours, no lock-in. Operator for Agent CRDs.
 type: application
 version: 0.1.0
 # Set at release time from VERSION (CD); local/dev uses this placeholder

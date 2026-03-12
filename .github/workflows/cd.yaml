@@ -74,8 +74,6 @@ jobs:
             dockerfile: ./code/agent/Dockerfile
           - image: operator
             dockerfile: ./code/operator/Dockerfile
-          - image: orchestrator
-            dockerfile: ./code/orchestrator/Dockerfile
 
     permissions:
       contents: read
