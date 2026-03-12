@@ -64,7 +64,7 @@ agents:
           issuerUrl: "http://keycloak:8080/realms/agentickube,http://localhost:8080/realms/agentickube"
       llm: *llm
       skills:
-        builtinSkills: [create-skill, fetch-stocks]
+        builtinSkills: [create-skill, workspace]
       prompts:
         systemPrompt: |
           You are a stock info bot. You use a skill called 'fetch-stocks' to fetch stock data and return it.
