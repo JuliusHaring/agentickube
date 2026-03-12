@@ -8,7 +8,7 @@ AGENT_QUERY when spec.trigger.type is "job" or "cron".
 import logging.config
 import sys
 
-from logic.skills import sync_workspace_from_repo
+from logic.tools.skills import sync_workspace_from_repo
 from logic.agent import agent_loop
 from config import AgentCLIConfig
 from shared.logging import LOGGING_CONFIG, get_logger

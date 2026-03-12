@@ -5,7 +5,7 @@ import inspect
 from pydantic_ai import FunctionToolset
 
 from config import agent_config
-from logic.skills import get_skill_instructions, run_skill_script
+from logic.tools.skills import get_skill_instructions, list_skills, run_skill_script
 from logic.tools.mcp import mcp_toolsets
 from shared.logging import get_logger
 
@@ -80,6 +80,7 @@ def assemble_toolsets() -> list:
     toolsets = []
 
     skill_system_tools = [
+        _wrap_tool_output(list_skills),
         _wrap_tool_output(get_skill_instructions),
         _wrap_tool_output(run_skill_script),
     ]

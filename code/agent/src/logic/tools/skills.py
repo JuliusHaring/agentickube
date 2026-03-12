@@ -103,6 +103,21 @@ def load_skill_metadata() -> list[SkillMetadata]:
     return results
 
 
+def list_skills() -> str:
+    """Return available skills. Use the exact skill_id (dir name) in get_skill_instructions and run_skill_script.
+
+    Returns a line-per-skill list: skill_id — description
+    """
+    meta_list = load_skill_metadata()
+    if not meta_list:
+        return "No skills available."
+    lines = [f"{s.dir_name} — {s.description}" for s in meta_list]
+    return (
+        "Available skills (use these exact skill_id values in other tools):\n"
+        + "\n".join(lines)
+    )
+
+
 def get_skill_instructions(skill_name: str) -> str:
     """Load full instructions (markdown body, frontmatter stripped) for a skill.
 

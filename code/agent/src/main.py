@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from shared.session import clean_session_folder
 from security import get_auth_dependencies, validate_auth_config
 from config import agent_config
-from logic.skills import sync_workspace_from_repo
+from logic.tools.skills import sync_workspace_from_repo
 from routes import query_router
 from shared.otel import setup_fastapi_opentelemetry
 from shared.logging import LOGGING_CONFIG, get_logger  #
