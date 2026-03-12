@@ -20,6 +20,8 @@ class AgentConfig(BaseSettings):
     workspace_dir: str = Field(default="/workspace")
     conversation_memory_enabled: bool = Field(default=False)
     conversation_max_history: int = Field(default=20)
+    session_max_history: int = Field(default=10000)
+    session_clean_interval: str | None = Field(default="0 * * * *")
     port: int = Field(default=8000)
     reload: bool = Field(default=False)
 

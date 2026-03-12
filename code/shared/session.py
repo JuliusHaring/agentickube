@@ -3,10 +3,15 @@
 from __future__ import annotations
 
 import json
+import shutil
 import uuid
 from pathlib import Path
 
 from pydantic import BaseModel
+
+from shared.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class HistoryMessage(BaseModel):
@@ -92,3 +97,16 @@ def history_prompt(
                     )
             lines.append(f"Assistant: {m.content}")
     return "\n".join(lines)
+
+
+def clean_session_folder(base_dir: str, keep_last_n: int = 10000) -> None:
+    path = session_dir(base_dir)
+    logger.info(f"Cleaning session folder: {path}")
+    if not path.is_dir():
+        return
+    for file in sorted(path.iterdir(), key=lambda x: x.stat().st_mtime, reverse=True)[
+        keep_last_n:
+    ]:
+        logger.info(f"Removing session file: {file}")
+        shutil.rmtree(file)
+    logger.info(f"Session folder cleaned: {path}")
