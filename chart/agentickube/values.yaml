@@ -61,6 +61,13 @@ agentickube:
       create: false
       name: agent-workspace-pvc
       size: 1Gi
+  # Default OpenTelemetry settings for all Agents created by this chart.
+  # Individual agents can override these via spec.openTelemetry.
+  openTelemetry:
+    enabled: false
+    endpoint: ""
+    # Set to null to use operator defaults; otherwise a float between 0.0 and 1.0.
+    samplingRatio: null
   # Multiple Agent CRs: list of { name, spec }. spec is the full Agent spec (ai.juliusharing.com/v1).
   # Example: agents: [ { name: my-agent, spec: { llm: { modelName: qwen3:1.7b, baseUrl: http://ollama:11434/v1 }, ... } } ]
   #

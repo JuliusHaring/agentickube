@@ -14,10 +14,59 @@ metadata:
     meta.helm.sh/release-namespace: {{ $.Release.Namespace | quote }}
 spec:
   {{- if .spec }}
-  {{- toYaml .spec | nindent 2 }}
+  {{- $spec := .spec | default dict }}
+  {{- $specNoOtel := omit $spec "openTelemetry" }}
+  {{- toYaml $specNoOtel | nindent 2 }}
+  {{- $g := $.Values.agentickube.openTelemetry | default dict }}
+  {{- $a := $spec.openTelemetry | default dict }}
+  {{- $hasGlobalOtel := gt (len $g) 0 }}
+  {{- $hasAgentOtel := gt (len $a) 0 }}
+  {{- if or $hasGlobalOtel $hasAgentOtel }}
+  openTelemetry:
+    {{- /* enabled: agent override -> global -> false */}}
+    {{- $enabled := false }}
+    {{- if hasKey $g "enabled" }}
+      {{- $enabled = (default false $g.enabled) }}
+    {{- end }}
+    {{- if hasKey $a "enabled" }}
+      {{- $enabled = (default false $a.enabled) }}
+    {{- end }}
+    enabled: {{ $enabled }}
+
+    {{- /* endpoint: agent override -> global -> empty string */}}
+    {{- $endpoint := "" }}
+    {{- if hasKey $g "endpoint" }}
+      {{- $endpoint = (default "" $g.endpoint) }}
+    {{- end }}
+    {{- if hasKey $a "endpoint" }}
+      {{- $endpoint = (default "" $a.endpoint) }}
+    {{- end }}
+    endpoint: {{ $endpoint | quote }}
+
+    {{- /* samplingRatio: only render if set either globally or per-agent */}}
+    {{- $samplingSet := or (hasKey $g "samplingRatio") (hasKey $a "samplingRatio") }}
+    {{- if $samplingSet }}
+    {{- $sampling := 0.0 }}
+    {{- if hasKey $g "samplingRatio" }}
+      {{- $sampling = $g.samplingRatio }}
+    {{- end }}
+    {{- if hasKey $a "samplingRatio" }}
+      {{- $sampling = $a.samplingRatio }}
+    {{- end }}
+    samplingRatio: {{ $sampling }}
+    {{- end }}
+
+    {{- if hasKey $a "serviceName" }}
+    serviceName: {{ $a.serviceName | quote }}
+    {{- end }}
+  {{- end }}
   {{- else }}
   image: {{ $.Values.agentickube.image.repository }}:{{ $.Values.agentickube.image.tag | default $.Chart.AppVersion | default "latest" }}
   imagePullPolicy: {{ $.Values.agentickube.image.pullPolicy }}
+  {{- if $.Values.agentickube.openTelemetry }}
+  openTelemetry:
+    {{- toYaml $.Values.agentickube.openTelemetry | nindent 4 }}
+  {{- end }}
   {{- end }}
 ---
 {{- end }}

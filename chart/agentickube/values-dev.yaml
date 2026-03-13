@@ -42,6 +42,11 @@ agentickube:
     repository: agentickube-agent
     tag: latest
     pullPolicy: IfNotPresent
+  # Dev default OpenTelemetry settings for all Agents (can be overridden per-agent in spec.openTelemetry).
+  openTelemetry:
+    enabled: true
+    endpoint: http://otel-collector:4318
+    samplingRatio: 1.0
   workspace:
     path: /workspace
     pvc:
@@ -64,10 +69,7 @@ agentickube:
         enabled: true
         maxHistory: 10
       openTelemetry:
-        enabled: true
-        endpoint: http://otel-collector:4318
         serviceName: stock-fetcher
-        samplingRatio: 1.0
 
   networkPolicy:
     enabled: true
