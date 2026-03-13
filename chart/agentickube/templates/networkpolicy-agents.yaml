@@ -1,0 +1,58 @@
+{{- /*
+NetworkPolicy for Agent pods.
+
+Defaults (can be overridden via values):
+- Deny all egress except what is explicitly allowed.
+- Allow DNS (UDP/TCP 53) so agents can resolve public hosts.
+- Optionally allow egress to cluster services and/or additional CIDRs.
+
+Agent pods are selected by the "agent" label, which the operator sets on
+Deployments/Jobs/CronJobs/Pods via _agent_recommended_labels().
+*/}}
+{{- if .Values.agentickube.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: agentickube-agents
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/part-of: agentickube
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: agent
+  policyTypes:
+    - Egress
+  egress:
+    # Allow DNS to kube-dns / coreDNS in-cluster (port 53 TCP/UDP).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    {{- if .Values.agentickube.networkPolicy.allowClusterEgress }}
+    # Optional: allow egress to all cluster IPs (services/pods).
+    - to:
+        - ipBlock:
+            cidr: {{ .Values.agentickube.networkPolicy.clusterCidr | default "10.0.0.0/8" | quote }}
+    {{- end }}
+    {{- range .Values.agentickube.networkPolicy.extraEgressCidrs }}
+    - to:
+        - ipBlock:
+            cidr: {{ . | quote }}
+    {{- end }}
+    {{- range .Values.agentickube.networkPolicy.extraEgressNamespaces }}
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ . | quote }}
+    {{- end }}
+{{- end }}
+

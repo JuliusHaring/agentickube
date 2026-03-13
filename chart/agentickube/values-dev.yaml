@@ -68,3 +68,10 @@ agentickube:
         endpoint: http://otel-collector:4318
         serviceName: stock-fetcher
         samplingRatio: 1.0
+
+  networkPolicy:
+    enabled: true
+    allowClusterEgress: false
+    clusterCidr: 10.0.0.0/8
+    extraEgressCidrs: []
+    extraEgressNamespaces: []

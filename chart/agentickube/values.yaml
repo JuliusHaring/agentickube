@@ -87,3 +87,15 @@ agentickube:
   # Optional spec.env (core.v1.EnvVar[]) and spec.envFrom (core.v1.EnvFromSource[]) for extra env vars
   # or whole Secrets/ConfigMaps, same as Pod.spec.containers[].env / envFrom.
   agents: []
+  networkPolicy:
+    enabled: false
+    # When enabled, deny all egress except:
+    # - DNS to kube-dns (TCP/UDP 53)
+    # - Optional cluster egress and extra CIDRs/namespaces below.
+    allowClusterEgress: false
+    # Cluster CIDR for in-cluster services/pods (used when allowClusterEgress is true).
+    clusterCidr: 10.0.0.0/8
+    # Extra CIDRs to allow egress to (e.g. NAT gateway, specific external ranges).
+    extraEgressCidrs: []
+    # Extra namespaces to allow egress to by name (via namespaceSelector).
+    extraEgressNamespaces: []
