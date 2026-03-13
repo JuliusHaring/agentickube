@@ -2,6 +2,14 @@
 
 <!-- version list -->
 
+## v5.1.1 (2026-03-13)
+
+### Bug Fixes
+
+- Move crd into proper crd folder
+  ([`706a002`](https://github.com/JuliusHaring/agentickube/commit/706a002829b3e542c45d7ecb7952bd9706008545))
+
+
 ## v5.1.0 (2026-03-13)
 
 ### Features
