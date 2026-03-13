@@ -2,6 +2,22 @@
 
 <!-- version list -->
 
+## v5.1.0 (2026-03-13)
+
+### Features
+
+- Add networkpolicy to chart
+  ([`8619a25`](https://github.com/JuliusHaring/agentickube/commit/8619a25894c85c3e97412f9851074bb2ae41b07b))
+
+- Add system prompt as file
+  ([`186fa34`](https://github.com/JuliusHaring/agentickube/commit/186fa34159e9cbfa3bed3661d23257aa1728b6a7))
+
+### Refactoring
+
+- Add open telemetry to agentickube level in helm chart
+  ([`723514b`](https://github.com/JuliusHaring/agentickube/commit/723514b9f759c6aea5a6f78da669adade8d08fda))
+
+
 ## v5.0.0 (2026-03-12)
 
 ### Chores
