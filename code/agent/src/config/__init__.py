@@ -16,6 +16,7 @@ class MCPServerConfig(BaseModel):
 class AgentConfig(BaseSettings):
     agent_name: str | None = Field(default=None)
     system_prompt: str | None = Field(default=None)
+    system_prompt_file: str | None = Field(default=None)
     mcp_servers: list[MCPServerConfig] = []
     workspace_dir: str = Field(default="/workspace")
     conversation_memory_enabled: bool = Field(default=False)
